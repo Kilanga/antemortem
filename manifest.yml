@@ -30,6 +30,12 @@ modules:
     - key: antemortem-run-analysis
       function: run-analysis-webtrigger
 
+  # Long-running jobs (demo load/reset) run as async events: up to 15 min.
+  consumer:
+    - key: antemortem-jobs-consumer
+      queue: antemortem-jobs
+      function: jobs
+
   # ---------------------------------------------------------------------------
   # Storage
   # ---------------------------------------------------------------------------
@@ -50,6 +56,9 @@ modules:
       timeoutSeconds: 55
     - key: run-analysis-webtrigger
       handler: index.runAnalysisWebtrigger
+    - key: jobs
+      handler: index.jobsConsumer
+      timeoutSeconds: 900
 
 resources:
   - key: command-center
@@ -58,12 +67,18 @@ resources:
 permissions:
   scopes:
     - storage:app
+    # Jira — reading the work graph, creating corrective actions, and (demo
+    # loader only) creating/deleting the FIELD project.
     - read:jira-work
     - write:jira-work
     - read:jira-user
-    - read:confluence-content.all
-    - write:confluence-content
-    - read:confluence-space.summary
+    - manage:jira-configuration
+    # Confluence — publishing projected incidents (v2 pages API, granular)
+    # and (demo loader only) creating/deleting the ANTE space (v1, classic).
+    - read:space:confluence
+    - read:page:confluence
+    - write:page:confluence
+    - write:confluence-space
 
 app:
   runtime:

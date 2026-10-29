@@ -19,4 +19,20 @@ export const api = {
   runAnalysisNow: () => call('runAnalysisNow'),
   getSettings: () => call('getSettings'),
   saveSettings: (patch) => call('saveSettings', patch),
+
+  loadDemo: () => call('loadDemo'),
+  resetDemo: () => call('resetDemo'),
+  getDemoProgress: () => call('getDemoProgress'),
+
+  listContracts: () => call('listContracts'),
+  saveContract: (c) => call('saveContract', c),
+  listObligations: () => call('listObligations'),
+  saveObligation: (o) => call('saveObligation', o),
+  archiveObligation: (id) => call('archiveObligation', { id }),
+  testJql: (jql) => call('testJql', { jql }),
+
+  listDecisions: () => call('listDecisions'),
+  saveDecision: (d) => call('saveDecision', d),
+  archiveDecision: (id) => call('archiveDecision', { id }),
+  listAvailability: () => call('listAvailability'),
 };

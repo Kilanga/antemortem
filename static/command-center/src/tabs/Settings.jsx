@@ -1,0 +1,125 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { api } from '../api.js';
+import { Card, Callout, ConfirmButton, Field, fmtDateTime } from '../ui.jsx';
+
+export default function Settings({ overview, notify, onChanged }) {
+  const { settings } = overview;
+  const [form, setForm] = useState({
+    confluenceSpaceKey: settings.confluenceSpaceKey ?? '',
+    actionsProjectKey: settings.actionsProjectKey ?? '',
+    publishThreshold: settings.publishThreshold,
+    graphSource: settings.graphSource,
+  });
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(overview.demo ?? { status: 'idle', steps: [] });
+  const timer = useRef(null);
+
+  // Poll while a demo job runs.
+  useEffect(() => {
+    const active = progress.status === 'running' || progress.status === 'resetting';
+    if (active && !timer.current) {
+      timer.current = setInterval(async () => {
+        const r = await api.getDemoProgress();
+        if (r.ok) setProgress(r.progress);
+      }, 2500);
+    }
+    if (!active && timer.current) {
+      clearInterval(timer.current);
+      timer.current = null;
+      onChanged();
+    }
+    return () => {};
+  }, [progress.status]);
+  useEffect(() => () => timer.current && clearInterval(timer.current), []);
+
+  const save = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    const r = await api.saveSettings({
+      confluenceSpaceKey: form.confluenceSpaceKey || null,
+      actionsProjectKey: form.actionsProjectKey || null,
+      publishThreshold: Number(form.publishThreshold),
+      graphSource: form.graphSource,
+    });
+    setBusy(false);
+    notify(r.ok ? 'ok' : 'warn', r.ok ? 'Settings saved.' : r.error);
+    onChanged();
+  };
+
+  const loadDemo = async () => {
+    const r = await api.loadDemo();
+    if (!r.ok) return notify('warn', r.error);
+    setProgress({ status: 'running', steps: [], error: null });
+  };
+  const resetDemo = async () => {
+    const r = await api.resetDemo();
+    if (!r.ok) return notify('warn', r.error);
+    setProgress({ status: 'resetting', steps: [], error: null });
+  };
+
+  const active = progress.status === 'running' || progress.status === 'resetting';
+
+  return (
+    <>
+      <section className="hero compact">
+        <div>
+          <p className="eyebrow">Settings</p>
+          <h1>Where Antemortem reads and writes</h1>
+        </div>
+      </section>
+
+      <section className="grid">
+        <Card title="Demo scenario" status={settings.demoLoaded ? 'ok' : 'idle'} statusLabel={settings.demoLoaded ? 'Loaded' : 'Not loaded'}>
+          <p className="hint">
+            A fictional field-service contract (Meridian Telecom ↔ Nordlink Field Services) whose data converges on a
+            contract-penalty incident 16 days from today. Creates Jira project <code>FIELD</code>, Confluence space{' '}
+            <code>ANTE</code>, one contract, four obligations, three decisions with their assumptions. Runs in the background;
+            allow one to two minutes.
+          </p>
+          <div className="actions left">
+            <ConfirmButton className="btn" label={settings.demoLoaded ? 'Reload demo scenario' : 'Load demo scenario'} confirmLabel="Create FIELD + ANTE — confirm" onConfirm={loadDemo} disabled={active} />
+            <ConfirmButton className="btn subtle" label="Reset demo" confirmLabel="Delete FIELD + ANTE — confirm" onConfirm={resetDemo} disabled={active} />
+          </div>
+          {active && (
+            <div className="progress">
+              <div className="section-title">{progress.status === 'resetting' ? 'Resetting…' : 'Loading…'}</div>
+              <ol className="steps">
+                {progress.steps.map((s) => (
+                  <li key={s.key} className={s.status}>
+                    <span className="step-status">{{ pending: '○', running: '◐', done: '●', failed: '✕' }[s.status] ?? '○'}</span>
+                    <span>{s.label}</span>
+                    {s.detail && <span className="muted small"> — {s.detail}</span>}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+          {progress.status === 'failed' && (
+            <Callout kind="warn" title="Demo job failed">
+              <div>{progress.error}</div>
+              <div className="small muted">Fix the cause (usually a permission or an existing project/space) and load again — completed steps are skipped.</div>
+            </Callout>
+          )}
+          {progress.status === 'done' && !active && (
+            <Callout kind="ok" title={`Loaded ${fmtDateTime(progress.finishedAt)}`}>
+              <ol className="steps compact">{progress.steps.map((s) => <li key={s.key}>{s.label}{s.detail ? ` — ${s.detail}` : ''}</li>)}</ol>
+            </Callout>
+          )}
+          {progress.status === 'idle' && progress.report?.length > 0 && (
+            <Callout kind="info" title={`Reset ${fmtDateTime(progress.lastReset)}`}>{progress.report.join(' · ')}</Callout>
+          )}
+        </Card>
+
+        <Card title="Targets">
+          <form className="form" onSubmit={save}>
+            <Field label="Confluence space key" hint="where projected incidents are published"><input value={form.confluenceSpaceKey} onChange={(e) => setForm({ ...form, confluenceSpaceKey: e.target.value.toUpperCase() })} placeholder="e.g. ANTE" /></Field>
+            <Field label="Jira project key" hint="where corrective actions are created"><input value={form.actionsProjectKey} onChange={(e) => setForm({ ...form, actionsProjectKey: e.target.value.toUpperCase() })} placeholder="e.g. FIELD" /></Field>
+            <Field label="Publish threshold" hint="forecast probability above which a post-mortem is written"><input type="number" min="0.05" max="0.98" step="0.05" value={form.publishThreshold} onChange={(e) => setForm({ ...form, publishThreshold: e.target.value })} /></Field>
+            <Field label="Graph source" hint="Teamwork Graph needs the EAP scope; falls back to REST"><select value={form.graphSource} onChange={(e) => setForm({ ...form, graphSource: e.target.value })}><option value="rest">Jira & Confluence REST</option><option value="auto">Auto (Teamwork Graph when available)</option><option value="twg">Teamwork Graph</option></select></Field>
+            <div className="actions left"><button className="btn" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button></div>
+          </form>
+        </Card>
+      </section>
+    </>
+  );
+}

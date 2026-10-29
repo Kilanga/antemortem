@@ -11,7 +11,7 @@ test('migration names are unique and ordered', () => {
 
 test('every migration is idempotent and single-statement', () => {
   for (const m of migrations) {
-    assert.match(m.statement, /CREATE TABLE IF NOT EXISTS/i, m.name);
+    assert.match(m.statement, /CREATE TABLE IF NOT EXISTS|ADD COLUMN IF NOT EXISTS/i, m.name);
     assert.ok(!m.statement.trim().slice(0, -1).includes(';'), `${m.name} must contain one statement`);
     assert.ok(!/AUTO_INCREMENT/i.test(m.statement), `${m.name} must not use AUTO_INCREMENT`);
     assert.ok(!/FOREIGN KEY/i.test(m.statement), `${m.name} must not declare foreign keys`);
@@ -19,7 +19,9 @@ test('every migration is idempotent and single-statement', () => {
 });
 
 test('tableNames matches the tables created by migrations', () => {
-  const created = migrations.map((m) => m.statement.match(/CREATE TABLE IF NOT EXISTS (\w+)/i)[1]);
+  const created = migrations
+    .map((m) => m.statement.match(/CREATE TABLE IF NOT EXISTS (\w+)/i)?.[1])
+    .filter(Boolean);
   assert.deepEqual(created, tableNames);
 });
 

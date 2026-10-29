@@ -198,6 +198,15 @@ export const migrations = [
       INDEX idx_run_started (started_at)
     )`,
   },
+  {
+    // Obligations measured over a contractual window rather than a calendar
+    // month (common in field-service contracts: "30 days from go-live").
+    // When set, the engine uses these instead of deriving the period.
+    name: 'v012_obligation_period_window',
+    statement: `ALTER TABLE obligation
+      ADD COLUMN IF NOT EXISTS period_starts_on DATE NULL,
+      ADD COLUMN IF NOT EXISTS period_ends_on DATE NULL`,
+  },
 ];
 
 /** Table names, in creation order — used by the health check. */
