@@ -216,7 +216,13 @@ resolver.define('listForecasts', safe(async () => {
   const obls = await listObligationsWithContract({ where: "status = 'active'", orderBy: 'code ASC' });
   const rows = await query('SELECT * FROM forecast WHERE superseded_by IS NULL AND archived_at IS NULL ORDER BY computed_at DESC LIMIT 500');
   const latest = new Map();
-  for (const r of rows) if (!latest.has(r.obligation_id)) latest.set(r.obligation_id, hydrate('forecast', r));
+  for (const r of rows) {
+    if (latest.has(r.obligation_id)) continue;
+    const f = hydrate('forecast', r);
+    // `healthy` is derived, not stored: no scoring step means nothing was found.
+    f.healthy = !(f.explanation?.steps?.length) && Number(f.probability) <= 0.05;
+    latest.set(r.obligation_id, f);
+  }
   const openSignals = await query('SELECT type, severity, subject_type, subject_id, fingerprint, detected_at, evidence FROM risk_signal WHERE resolved_at IS NULL AND archived_at IS NULL ORDER BY severity DESC LIMIT 500');
   const out = obls.map((o) => {
     const f = latest.get(o.id) ?? null;

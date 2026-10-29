@@ -180,7 +180,7 @@ async function stepLinks({ scenario, state }) {
   for (const l of scenario.links) {
     const id = `${l.outward}>${l.inward}`;
     if (state.linked[id]) continue;
-    await jira.createIssueLink({ type: l.type, outwardKey: state.issueKeys[l.outward], inwardKey: state.issueKeys[l.inward] });
+    await jira.createIssueLink({ type: l.type, blockerKey: state.issueKeys[l.outward], blockedKey: state.issueKeys[l.inward] });
     state.linked[id] = true;
   }
   return `${scenario.links.length} link(s): ${state.issueKeys[scenario.special.amendment]} blocks ${state.issueKeys[scenario.special.badges]}`;

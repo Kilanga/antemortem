@@ -115,12 +115,18 @@ export async function transitionIssue(issueKey, transitionId) {
   return call('POST', route`/rest/api/3/issue/${issueKey}/transitions`, { transition: { id: String(transitionId) } });
 }
 
-export async function createIssueLink({ type = 'Blocks', outwardKey, inwardKey }) {
-  // For "Blocks": outwardIssue blocks inwardIssue.
+/**
+ * Create "blocker blocks blocked". Jira's create-link API is counter-intuitive:
+ * the `inwardIssue` is the one that carries the OUTWARD description, i.e.
+ * { inwardIssue: A, outwardIssue: B, type: Blocks } reads "A blocks B".
+ * (Verified empirically on 2026-10-30; the read side in RestGraphSource
+ * follows the usual convention: on issue X, outwardIssue Y ⇒ "X blocks Y".)
+ */
+export async function createIssueLink({ type = 'Blocks', blockerKey, blockedKey }) {
   return call('POST', route`/rest/api/3/issueLink`, {
     type: { name: type },
-    outwardIssue: { key: outwardKey },
-    inwardIssue: { key: inwardKey },
+    inwardIssue: { key: blockerKey },
+    outwardIssue: { key: blockedKey },
   });
 }
 
