@@ -11,7 +11,9 @@
 - **Tests hors ligne** : `test/helpers/fakeGraph.mjs` (GraphSource en mémoire + mini-évaluateur JQL) ; sur le scénario, O-3 → 93 % courant / 83 % projeté, 4 hypothèses brisées, 5 signaux, probabilité 0,80, 40 000 €, rupture au J+16 ; O-1/O-2/O-4 saines. 20 tests.
 - Scénario ajusté : O-1 devient « ≤ 8 h sur 98 % du lot 1 » ; la charge Boreal hors lot 3 est de la maintenance préventive (label `preventive`) ; le ticket de réaffectation Helios est `dispatch`, pas `intervention`.
 
-À vérifier sur site : *Run analysis now* sur la démo NFS → O-3 en rouge avec sa chaîne.
+✅ Vérifié sur `antemortem-dev` le 30 oct 00:59 (v3.5.0) : résultat identique aux tests hors ligne — O-3 80 % / 40 000 € / rupture J+16, 4 hypothèses brisées, 5 signaux, chaîne datée ; O-1 (100 %), O-2, O-4 tiennent.
+
+Correctifs trouvés sur site : (1) `forecast.healthy` dérivé côté résolveur (non persisté) ; (2) **création de lien Jira à l'envers** — dans `POST /issueLink`, c'est `inwardIssue` qui porte la description sortante (« A blocks B » = inwardIssue A, outwardIssue B), la lecture suit la convention usuelle ; (3) **`key in (...)` peut renvoyer vide** après suppression/recréation d'un projet avec les mêmes clés (index de recherche obsolète) → `issuesByKeys` lit les tickets directement par clé.
 
 ## Semaine 2 — 30 oct 2026 (en avance sur le plan)
 
