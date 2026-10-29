@@ -9,7 +9,9 @@ import { runAnalysis } from '../engine/index.js';
 /** avi:forge:installed:app / avi:forge:upgraded:app */
 export async function onInstall(event, context) {
   console.log(`[antemortem] ${event?.eventType ?? 'install'} — applying schema`);
-  const result = await runMigrations({ deadlineMs: 45_000 });
+  // Default function timeout is 25 s here (custom timeouts are only allowed on
+  // scheduled triggers and consumers), so keep the retry window inside it.
+  const result = await runMigrations({ deadlineMs: 18_000 });
   console.log('[antemortem] schema result', JSON.stringify(result));
   return result;
 }

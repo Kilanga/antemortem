@@ -45,13 +45,11 @@ modules:
       handler: index.resolver
     - key: on-install
       handler: index.onInstall
-      timeoutSeconds: 55
     - key: hourly
       handler: index.hourly
       timeoutSeconds: 55
     - key: run-analysis-webtrigger
       handler: index.runAnalysisWebtrigger
-      timeoutSeconds: 55
 
 resources:
   - key: command-center
