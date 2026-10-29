@@ -1,0 +1,20 @@
+{
+  "copilot": [
+    "forge-app-builder",
+    "forge-app-review",
+    "forge-connector",
+    "forge-cost-optimizer",
+    "forge-debugger",
+    "forge-onboarding",
+    "forge-security-review"
+  ],
+  "vscode": [
+    "forge-app-builder",
+    "forge-app-review",
+    "forge-connector",
+    "forge-cost-optimizer",
+    "forge-debugger",
+    "forge-onboarding",
+    "forge-security-review"
+  ]
+}

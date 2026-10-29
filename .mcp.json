@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "forge": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v1/forge/mcp"
+    },
+    "ads-mcp": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v1/ads/public/mcp"
+    }
+  }
+}
