@@ -266,6 +266,18 @@ async function stepSettings() {
 
 async function deleteModelRows(state) {
   const m = state.model ?? {};
+  // Rows that a crashed earlier load may have written without an id.
+  for (const t of ['contract', 'obligation', 'decision', 'assumption', 'link', 'availability']) {
+    await execute(`DELETE FROM ${t} WHERE id = '' OR id IS NULL`);
+  }
+  // Demo contracts are flagged; anything hanging off them goes too.
+  const demoContracts = await contracts.list({ where: 'is_demo = 1', includeArchived: true });
+  for (const c of demoContracts) {
+    const obls = await obligations.list({ where: 'contract_id = ?', params: [c.id], includeArchived: true });
+    m.obligationIds = { ...(m.obligationIds ?? {}), ...Object.fromEntries(obls.map((o) => [o.code + ':' + o.id, o.id])) };
+    m.contractId = m.contractId ?? c.id;
+    if (m.contractId !== c.id) await contracts.hardDelete(c.id);
+  }
   const obligationIds = Object.values(m.obligationIds ?? {});
   for (const oid of obligationIds) {
     const fis = await futureIncidents.list({ where: 'obligation_id = ?', params: [oid], includeArchived: true });

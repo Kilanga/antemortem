@@ -97,6 +97,11 @@ export default function Settings({ overview, notify, onChanged }) {
           {progress.status === 'failed' && (
             <Callout kind="warn" title="Demo job failed">
               <div>{progress.error}</div>
+              {progress.steps?.length > 0 && (
+                <ol className="steps compact">
+                  {progress.steps.map((s) => <li key={s.key} className={s.status}><span className="step-status">{{ pending: '○', running: '◐', done: '●', failed: '✕' }[s.status] ?? '○'}</span>{s.label}{s.detail ? ` — ${s.detail}` : ''}</li>)}
+                </ol>
+              )}
               <div className="small muted">Fix the cause (usually a permission or an existing project/space) and load again — completed steps are skipped.</div>
             </Callout>
           )}

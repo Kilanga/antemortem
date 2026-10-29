@@ -33,7 +33,8 @@ export async function execute(text, params = []) {
  * stringified; undefined keys are skipped.
  */
 export async function insert(table, row) {
-  const data = { id: row.id ?? newId(), ...row };
+  // `...row` first: an explicit `id: undefined` must not clobber the generated one.
+  const data = { ...row, id: row.id ?? newId() };
   const cols = Object.keys(data).filter((k) => data[k] !== undefined);
   const vals = cols.map((k) => encode(data[k]));
   const placeholders = cols.map(() => '?').join(', ');
