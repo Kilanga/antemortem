@@ -8,6 +8,7 @@
 import api, { route } from '@forge/api';
 
 export const ISSUE_PROPERTY_KEY = 'antemortem';
+export const ISSUE_FIELDS = ['summary', 'status', 'labels', 'assignee', 'created', 'updated', 'resolutiondate', 'duedate', 'issuelinks'];
 
 async function call(method, r, body, { okStatuses = [200, 201, 204] } = {}) {
   const res = await api.asApp().requestJira(r, {
@@ -73,7 +74,7 @@ export async function deleteProject(key) {
  * Enhanced JQL search, paginated. `fields` is an array of field ids.
  * Returns all issues (bounded by maxTotal).
  */
-export async function searchIssues(jql, { fields = ['summary', 'status', 'labels', 'assignee', 'created', 'updated', 'resolutiondate', 'duedate', 'issuelinks'], maxTotal = 1000, properties = [ISSUE_PROPERTY_KEY] } = {}) {
+export async function searchIssues(jql, { fields = ISSUE_FIELDS, maxTotal = 1000, properties = [ISSUE_PROPERTY_KEY] } = {}) {
   const issues = [];
   let nextPageToken;
   do {
@@ -144,8 +145,13 @@ export async function getIssueProperty(issueKey, propertyKey = ISSUE_PROPERTY_KE
   }
 }
 
-export async function getIssue(issueKey, fields = ['summary', 'status', 'labels']) {
-  return call('GET', route`/rest/api/3/issue/${issueKey}?fields=${encodeURIComponent(fields.join(','))}&properties=${ISSUE_PROPERTY_KEY}`);
+export async function getIssue(issueKey, fields = ISSUE_FIELDS) {
+  try {
+    return await call('GET', route`/rest/api/3/issue/${issueKey}?fields=${fields.join(',')}&properties=${ISSUE_PROPERTY_KEY}`);
+  } catch (err) {
+    if (err.status === 404) return null;
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------

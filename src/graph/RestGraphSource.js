@@ -1,5 +1,5 @@
 import { GraphSource, statusCategory, peopleOf, vendorOf } from './GraphSource.js';
-import { searchIssues, ISSUE_PROPERTY_KEY } from '../jira/client.js';
+import { searchIssues, getIssue, ISSUE_PROPERTY_KEY, ISSUE_FIELDS } from '../jira/client.js';
 import { availability } from '../db/repo/index.js';
 import { toSqlDate } from '../db/client.js';
 
@@ -32,10 +32,23 @@ export class RestGraphSource extends GraphSource {
     return rows.map((r) => ({ kind: r.kind, startsOn: toDate(r.starts_on), endsOn: toDate(r.ends_on), note: r.note, displayName: r.display_name }));
   }
 
+  /**
+   * Direct reads by key rather than `key in (...)`: the JQL search index can
+   * lag (and, after a project is deleted and recreated with the same key,
+   * can point at the old issues), while GET /issue/{key} is always current.
+   */
   async issuesByKeys(keys) {
     const clean = [...new Set(keys)].filter((k) => /^[A-Z][A-Z0-9_]+-\d+$/.test(k));
-    if (!clean.length) return [];
-    return this.issuesInScope(`key in (${clean.join(', ')})`);
+    const out = [];
+    for (const key of clean) {
+      try {
+        const raw = await getIssue(key, ISSUE_FIELDS);
+        if (raw) out.push(normalise(raw));
+      } catch (err) {
+        if (err.status !== 404) throw err;
+      }
+    }
+    return out;
   }
 
   async teamLoad(teamRef) {
