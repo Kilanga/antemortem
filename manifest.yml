@@ -1,0 +1,19 @@
+modules:
+  jira:globalPage:
+    - key: antemortem-hello-world-page
+      resource: main
+      resolver:
+        function: resolver
+      title: antemortem
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: static/hello-world/build
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/29a1ae10-bc1f-4027-a192-00aa16fa9d20
