@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Semaine 3 — 30 oct 2026 (moteur, partie 1)
+
+- **Métriques** (`engine/metrics.js`) : `ratio_within_sla` (ratio courant, projection explicable : tickets ouverts proches du SLA comptés comme futurs manquements, nombre de résolutions à l'heure nécessaires pour revenir au seuil), `count_max/min`, `deadline` ; fenêtre de période calendaire ou contractuelle.
+- **Détecteurs** (`engine/signals/`) : `obligation_trend`, `stale_critical_issue`, `single_point_of_failure` sur l'obligation ; vérification des hypothèses `capacity`, `person_available`, `dependency_done_by` (avec bloqueurs et leur inactivité), `routing` (→ `decision_contradicted`). Statut d'hypothèse `holding / shaken / broken` avec preuve. Empreintes stables → signaux upsertés, et résolus quand ils ne sont plus détectés.
+- **Projection** (`engine/forecast.js`) : score transparent (signal direct ≤ 0,5 ; hypothèses brisées/ébranlées ≤ 0,3 ; contradiction +0,1 ; actions correctives −0,1/−0,2), borné [0,05 ; 0,98], date de rupture = fin de période, coût depuis la pénalité ; `explanation` imprimable.
+- **Chaîne causale** (`engine/analyse.js`) : décision → événements datés (preuves) → mesure → rupture projetée, triée chronologiquement. C'est la timeline du futur post-mortem.
+- **Pipeline** (`engine/index.js`) : par obligation active, résolution des décisions liées, persistance signaux / hypothèses / forecasts (supersédés), marquage `contradicted` des décisions.
+- **UI** : Overview réécrit — « Next post-mortem in N days », liste des obligations avec jauge courant/projeté/seuil, tags de signaux, chaîne causale dépliable et arithmétique du score ; cartes de santé repliées derrière *Health*.
+- **Tests hors ligne** : `test/helpers/fakeGraph.mjs` (GraphSource en mémoire + mini-évaluateur JQL) ; sur le scénario, O-3 → 93 % courant / 83 % projeté, 4 hypothèses brisées, 5 signaux, probabilité 0,80, 40 000 €, rupture au J+16 ; O-1/O-2/O-4 saines. 20 tests.
+- Scénario ajusté : O-1 devient « ≤ 8 h sur 98 % du lot 1 » ; la charge Boreal hors lot 3 est de la maintenance préventive (label `preventive`) ; le ticket de réaffectation Helios est `dispatch`, pas `intervention`.
+
+À vérifier sur site : *Run analysis now* sur la démo NFS → O-3 en rouge avec sa chaîne.
+
 ## Semaine 2 — 30 oct 2026 (en avance sur le plan)
 
 - **Modèle** : repositories pour les 11 tables, CRUD contrats / obligations / décisions / hypothèses / liens, garde « admin Jira » (évaluée `asUser` via `mypermissions`) sur toutes les écritures.

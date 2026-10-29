@@ -12,11 +12,11 @@ import Resolver from '@forge/resolver';
 import { getSchemaStatus, runMigrations } from '../db/migrate.js';
 import { getSettings, saveSettings } from '../settings.js';
 import { runAnalysis } from '../engine/index.js';
-import { query } from '../db/client.js';
+import { query, parseJson } from '../db/client.js';
 import { currentUserHasPermission, searchIssues } from '../jira/client.js';
 import {
   contracts, obligations, decisions, assumptions, availability,
-  listObligationsWithContract, listDecisionsWithAssumptions, linkObjects,
+  listObligationsWithContract, listDecisionsWithAssumptions, linkObjects, hydrate,
 } from '../db/repo/index.js';
 import { getProgress } from '../demo/seed.js';
 import { jobsQueue } from '../demo/consumer.js';
@@ -56,7 +56,7 @@ resolver.define(
     }
     return {
       ok: true,
-      app: { name: 'Antemortem', version: '0.2.0', week: 2 },
+      app: { name: 'Antemortem', version: '0.3.0', week: 3 },
       user: { accountId: req.context?.accountId ?? null },
       site: { cloudId: req.context?.cloudId ?? null, siteUrl: req.context?.siteUrl ?? null },
       schema,
@@ -210,6 +210,24 @@ resolver.define('saveDecision', admin(async (req) => {
 }));
 
 resolver.define('archiveDecision', admin(async (req) => ({ ok: true, archived: await decisions.archive(str(req.payload?.id, 36)) })));
+
+/** Latest forecast per active obligation, with open signals — the Overview's main list. */
+resolver.define('listForecasts', safe(async () => {
+  const obls = await listObligationsWithContract({ where: "status = 'active'", orderBy: 'code ASC' });
+  const rows = await query('SELECT * FROM forecast WHERE superseded_by IS NULL AND archived_at IS NULL ORDER BY computed_at DESC LIMIT 500');
+  const latest = new Map();
+  for (const r of rows) if (!latest.has(r.obligation_id)) latest.set(r.obligation_id, hydrate('forecast', r));
+  const openSignals = await query('SELECT type, severity, subject_type, subject_id, fingerprint, detected_at, evidence FROM risk_signal WHERE resolved_at IS NULL AND archived_at IS NULL ORDER BY severity DESC LIMIT 500');
+  const out = obls.map((o) => {
+    const f = latest.get(o.id) ?? null;
+    const chainFingerprints = new Set((f?.chain ?? []).map((e) => e.signalFingerprint).filter(Boolean));
+    const signals = openSignals
+      .filter((s) => (s.subject_type === 'obligation' && s.subject_id === o.id) || chainFingerprints.has(s.fingerprint))
+      .map((s) => ({ ...s, evidence: parseJson(s.evidence) }));
+    return { obligation: o, forecast: f, signals };
+  });
+  return { ok: true, forecasts: out };
+}));
 
 resolver.define('listAvailability', safe(async () => ({ ok: true, availability: await availability.list({ orderBy: 'starts_on DESC' }) })));
 

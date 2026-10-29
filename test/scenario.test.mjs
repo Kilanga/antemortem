@@ -23,7 +23,7 @@ test('lot 3 numbers converge on an O-3 breach trajectory', () => {
   assert.equal(resolved.length, 43);
   assert.equal(within.length, 40);
   assert.ok(within.length / resolved.length < 0.95, 'current ratio must already be under the 95 % threshold');
-  const open = lot3.filter((i) => !i.resolved && !i.labels.includes('vendor-helios'));
+  const open = lot3.filter((i) => !i.resolved);
   assert.equal(open.length, 11);
   const nearSla = open.filter((i) => today - i.startedAt > 3 * 3600_000);
   assert.equal(nearSla.length, 6);

@@ -29,6 +29,9 @@ export class GraphSource {
   /** Open issues attributed to a vendor/team ref (e.g. 'vendor-boreal'). */
   async teamLoad(teamRef) { throw new Error('not implemented'); }
 
+  /** Specific issues by key, normalised (missing keys are skipped). */
+  async issuesByKeys(keys) { throw new Error('not implemented'); }
+
   /** Human-readable name of this source for the UI and the narrative. */
   get name() { return 'abstract'; }
 }

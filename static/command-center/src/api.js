@@ -35,4 +35,5 @@ export const api = {
   saveDecision: (d) => call('saveDecision', d),
   archiveDecision: (id) => call('archiveDecision', { id }),
   listAvailability: () => call('listAvailability'),
+  listForecasts: () => call('listForecasts'),
 };

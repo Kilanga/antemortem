@@ -111,18 +111,18 @@ export function buildScenario(today = new Date()) {
     });
   }
 
-  // --- Boreal load on other lots so that open Boreal issues total 31
+  // --- Boreal preventive-maintenance load on other lots so that open Boreal issues total 31
   for (let i = 0; i < 20; i++) {
     const started = day(-(1 + Math.floor(rand() * 10)), 8 + Math.floor(rand() * 8));
     add({
       summary: `${pick(SITES)} — ${pick(FAULTS)}`,
-      labels: [i % 3 === 0 ? 'lot-2' : 'lot-1', 'vendor-boreal', 'intervention'],
+      labels: [i % 3 === 0 ? 'lot-2' : 'lot-1', 'vendor-boreal', 'preventive'],
       resolved: false,
       startedAt: started,
-      dueAt: new Date(started.getTime() + 8 * H),
+      dueAt: new Date(started.getTime() + 10 * D),
       resolvedAt: null,
       lastActivityAt: new Date(now.getTime() - rand() * 3 * D),
-      description: 'Curative intervention. SLA: 8 h to restore.',
+      description: 'Preventive maintenance visit (no restoration SLA). Counts toward the subcontractor\'s open workload.',
     });
   }
 
@@ -166,7 +166,7 @@ export function buildScenario(today = new Date()) {
   // --- The contradiction: part of lot 3 quietly moved to another vendor
   const contradiction = add({
     summary: 'Reassign 4 Northern-zone interventions to Helios Services',
-    labels: ['lot-3', 'vendor-helios', 'intervention'],
+    labels: ['lot-3', 'vendor-helios', 'dispatch'],
     resolved: false,
     startedAt: day(-1, 11),
     dueAt: day(3, 17),
@@ -201,10 +201,10 @@ export function buildScenario(today = new Date()) {
 
   const obligations = [
     {
-      ref: 'O-1', code: 'O-1', title: 'Time to acknowledge ≤ 30 min (all lots)',
-      description: '98 % of incidents acknowledged within 30 minutes, measured monthly.',
-      metric_type: 'ratio_within_sla', jql_scope: `project = "${DEMO.projectKey}" AND labels = intervention`,
-      sla_hours: 0.5, threshold: 0.98, period: 'custom', penalty_type: 'fixed', penalty_value: 5000, invoice_basis: null,
+      ref: 'O-1', code: 'O-1', title: 'Restoration ≤ 8 h on 98 % of lot 1 interventions',
+      description: 'Curative interventions on lot 1 (Western zone) restored within 8 hours for at least 98 % of cases over the contractual period.',
+      metric_type: 'ratio_within_sla', jql_scope: `project = "${DEMO.projectKey}" AND labels = lot-1 AND labels = intervention`,
+      sla_hours: 8, threshold: 0.98, period: 'custom', penalty_type: 'fixed', penalty_value: 5000, invoice_basis: null,
       status: 'active', healthy: true,
     },
     {
@@ -266,7 +266,7 @@ export function buildScenario(today = new Date()) {
         { statement: 'Boreal keeps no more than 25 open interventions across all lots.', kind: 'capacity', params: { teamRef: 'vendor-boreal', maxOpenIssues: 25 } },
         { statement: 'Karim Benali (only HV-qualified engineer on the Nordlink side) is available to the Northern zone until the end of the period.', kind: 'person_available', params: { personRef: DEMO.people.karim.ref, displayName: DEMO.people.karim.name, until: window.endsOn } },
         { statement: 'Site access badges for the September sites are delivered before the badge deadline.', kind: 'dependency_done_by', params: { issueRef: badges.id, date: ymd(day(2)) } },
-        { statement: 'Northern-zone interventions are routed to Boreal, not to another vendor.', kind: 'routing', params: { scopeJql: `project = "${DEMO.projectKey}" AND labels = lot-3 AND labels = intervention AND statusCategory != Done`, labelPrefix: 'vendor-', expected: 'vendor-boreal' } },
+        { statement: 'Northern-zone interventions are routed to Boreal, not to another vendor.', kind: 'routing', params: { scopeJql: `project = "${DEMO.projectKey}" AND labels = lot-3 AND statusCategory != Done`, labelPrefix: 'vendor-', expected: 'vendor-boreal' } },
       ],
       obligationRefs: ['O-3'],
     },
