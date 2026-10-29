@@ -10,4 +10,8 @@
 - Tests : `npm test` vérifie l'intégrité du schéma.
 - Décisions solo : `rovo:mcp` et option LLM retirés du périmètre ; TWG conditionné à un accès EAP avant fin semaine 4.
 
-À vérifier sur site (Arnaud) : déploiement `development`, installation Jira + Confluence sur `antemortem-dev`, schéma complet sur l'écran, puis installation depuis zéro sur `arnaudlothe`.
+✅ Vérifié sur `antemortem-dev` le 29 oct 23:55 : déploiement v2.0.0 `development`, installation Jira + Confluence, 11 tables `ready` dès l'installation, trigger horaire exécuté seul, *Run analysis now* OK, settings ANTE/FIELD sauvegardés.
+
+Correctif : `timeoutSeconds` n'est autorisé que sur les fonctions de `scheduledTrigger`/`consumer` (retiré du trigger d'installation et du webtrigger ; fenêtre de retry des migrations ramenée à 18 s).
+
+Reste à faire pour clore la semaine : installation depuis zéro sur `arnaudlothe` (test juge).
