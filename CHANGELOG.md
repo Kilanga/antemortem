@@ -10,7 +10,9 @@
 - **Migration** v012 : `obligation.period_starts_on` / `period_ends_on` (fenêtres contractuelles).
 - Tests : 13 (schéma + scénario).
 
-À vérifier sur site : déploiement (montée de version majeure à cause des scopes → `forge install --upgrade`), *Load demo scenario*, contenu de FIELD et ANTE, onglets Obligations / Decisions peuplés, *Reset demo*.
+✅ Vérifié sur `antemortem-dev` le 30 oct (v3.0.0 → v3.2.0) : chargement de la démo de bout en bout (projet, 90 tickets, 55 transitions, propriétés, lien, espace, 3 pages, modèle), onglets Obligations / Decisions peuplés, reset propre (projet + espace supprimés), rechargement, JQL quoté → 12 interventions lot 3 ouvertes.
+
+Correctifs trouvés sur site : (1) l'id généré était écrasé par `id: undefined` → ligne SQL sans id ; (2) **`FIELD` est un mot réservé JQL** → clé de projet de démo renommée `NFS`, clés toujours quotées dans les JQL ; (3) lien « source » des décisions préfixé `/wiki`.
 
 ## Semaine 1 — 29 oct 2026
 
