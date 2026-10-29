@@ -9,7 +9,7 @@
     "test": "node --test \"test/**/*.test.mjs\"",
     "build:ui": "npm --prefix static/command-center run build",
     "install:ui": "npm --prefix static/command-center install",
-    "deploy:dev": "npm run build:ui && forge deploy --non-interactive -e development",
+    "deploy:dev": "npm run build:ui && forge deploy --non-interactive -e development --approve MAJOR_VERSION_RULE",
     "lint": "forge lint"
   },
   "devDependencies": {
