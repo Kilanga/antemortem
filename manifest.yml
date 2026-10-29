@@ -1,16 +1,72 @@
 modules:
+  # ---------------------------------------------------------------------------
+  # UI — Command center (Custom UI, React + Vite)
+  # ---------------------------------------------------------------------------
   jira:globalPage:
-    - key: antemortem-hello-world-page
-      resource: main
+    - key: antemortem-command-center
+      resource: command-center
       resolver:
         function: resolver
-      title: antemortem
+      title: Antemortem
+      layout: native
+
+  # ---------------------------------------------------------------------------
+  # Lifecycle — schema is applied at install time, and re-checked hourly
+  # ---------------------------------------------------------------------------
+  trigger:
+    - key: antemortem-on-install
+      function: on-install
+      events:
+        - avi:forge:installed:app
+        - avi:forge:upgraded:app
+
+  scheduledTrigger:
+    - key: antemortem-hourly
+      function: hourly
+      interval: hour
+
+  # "Run analysis now" — also used by the demo and by tests.
+  webtrigger:
+    - key: antemortem-run-analysis
+      function: run-analysis-webtrigger
+
+  # ---------------------------------------------------------------------------
+  # Storage
+  # ---------------------------------------------------------------------------
+  sql:
+    - key: main
+      engine: mysql
+
+  # ---------------------------------------------------------------------------
+  # Functions
+  # ---------------------------------------------------------------------------
   function:
     - key: resolver
-      handler: index.handler
+      handler: index.resolver
+    - key: on-install
+      handler: index.onInstall
+      timeoutSeconds: 55
+    - key: hourly
+      handler: index.hourly
+      timeoutSeconds: 55
+    - key: run-analysis-webtrigger
+      handler: index.runAnalysisWebtrigger
+      timeoutSeconds: 55
+
 resources:
-  - key: main
-    path: static/hello-world/build
+  - key: command-center
+    path: static/command-center/dist
+
+permissions:
+  scopes:
+    - storage:app
+    - read:jira-work
+    - write:jira-work
+    - read:jira-user
+    - read:confluence-content.all
+    - write:confluence-content
+    - read:confluence-space.summary
+
 app:
   runtime:
     name: nodejs24.x

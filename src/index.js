@@ -1,12 +1,5 @@
-import Resolver from '@forge/resolver';
-
-const resolver = new Resolver();
-
-resolver.define('getText', (req) => {
-    console.log(req);
-
-    return 'Hello world!';
-});
-
-export const handler = resolver.getDefinitions();
-
+/**
+ * Forge function entry points. Keys here must match `handler:` in manifest.yml.
+ */
+export { handler as resolver } from './resolvers/index.js';
+export { onInstall, hourly, runAnalysisWebtrigger } from './triggers/index.js';

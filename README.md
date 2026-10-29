@@ -1,47 +1,35 @@
-# Forge Hello World
+# Antemortem
 
-This project contains a Forge app written in JavaScript that displays `Hello World!` in a Jira global page.
+> This app writes your post-mortems before the incidents happen — then helps you make sure they never get written for real.
 
-See [developer.atlassian.com/platform/forge/](https://developer.atlassian.com/platform/forge) for documentation and tutorials explaining Forge.
-
-## Requirements
-
-See [Set up Forge](https://developer.atlassian.com/platform/forge/set-up-forge/) for instructions to get set up.
+Atlassian Forge app, built solo for **Codegeist 2026**. Everything about the project — concept, architecture, data model, engine, demo scenario, plan, submission checklist — lives in **[BUILD.md](BUILD.md)**. Read that first.
 
 ## Quick start
-- Install top-level dependencies:
-```
-npm install
+
+```bash
+npm install && npm run install:ui
+npm test
+npm run deploy:dev
+forge install --non-interactive -e development --site antemortem-dev.atlassian.net --product jira
+forge install --non-interactive -e development --site antemortem-dev.atlassian.net --product confluence
 ```
 
-- Install dependencies (inside of the `static/hello-world` directory):
-```
-npm install
-```
+Then open **Apps → Antemortem** in Jira. The health screen should show every table as `ready` within a minute of installation (Forge applies the schema asynchronously); if not, click **Repair database**.
 
-- Modify your app by editing the files in `static/hello-world/src/`.
+## Layout
 
-- Build your app (inside of the `static/hello-world` directory):
 ```
-npm run build
-```
-
-- Deploy your app by running:
-```
-forge deploy
-```
-
-- Install your app in an Atlassian site by running:
-```
-forge install
+manifest.yml                 Forge modules, scopes, runtime
+src/index.js                 function entry points
+src/resolvers/               Custom UI resolvers
+src/triggers/                install / hourly / webtrigger
+src/db/                      Forge SQL: migrations, runner, query helpers
+src/engine/                  analysis pipeline (detectors → chains → forecast → narrative)
+src/settings.js              KVS-backed settings
+static/command-center/       React 18 + Vite frontend (build → dist/)
+test/                        node --test
 ```
 
-### Notes
-- Use the `forge deploy` command when you want to persist code changes.
-- Use the `forge install` command when you want to install the app on a new site.
-- Once the app is installed on a site, the site picks up the new app changes you deploy without needing to rerun the install command.
+## Status
 
-## Support
-
-See [Get help](https://developer.atlassian.com/platform/forge/get-help/) for how to get help and provide feedback.
-
+See [CHANGELOG.md](CHANGELOG.md). Ideas outside the current scope go to [BACKLOG.md](BACKLOG.md), not into the code.
