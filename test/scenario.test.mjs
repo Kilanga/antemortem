@@ -60,8 +60,8 @@ test('D-7 rests on four monitored assumptions and supports O-3', () => {
 
 test('Jira payloads are well-formed', () => {
   const spec = s.issues[0];
-  const f = issueFields(spec, 'FIELD', '10001');
-  assert.equal(f.project.key, 'FIELD');
+  const f = issueFields(spec, 'NFS', '10001');
+  assert.equal(f.project.key, 'NFS');
   assert.match(f.duedate, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(f.description.type, 'doc');
   const p = issueProperty(spec);

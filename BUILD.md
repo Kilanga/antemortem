@@ -198,7 +198,7 @@ Toutes les tables ont `id` (UUID), `created_at`, `updated_at`. Clés étrangère
 **`obligation`** — la primitive n°1.
 - `contract_id`, `code` (ex. `O-3`), `title`, `description`
 - `metric_type` : `ratio_within_sla | count_max | count_min | deadline | custom`
-- `jql_scope` : les tickets qui nourrissent la mesure (ex. `project = FIELD AND "Lot" = "Lot 3"`)
+- `jql_scope` : les tickets qui nourrissent la mesure (ex. `project = "NFS" AND labels = lot-3` — toujours quoter la clé : `FIELD` est un mot réservé JQL, leçon de la semaine 2)
 - `sla_hours` (si `ratio_within_sla`), `threshold` (ex. `0.95`), `period` : `monthly | weekly | one_shot | custom` (+ `period_starts_on` / `period_ends_on` pour les fenêtres contractuelles)
 - `penalty_type` : `fixed | percent_of_invoice`, `penalty_value`, `invoice_basis` (montant pour calculer un %)
 - `owner_account_id`
@@ -347,7 +347,7 @@ Design : sobre, dense, typographie forte, une seule couleur d'accent, aucun effe
 
 ## 8. Scénario de démo (embarqué dans l'app, `src/demo/`)
 
-Un bouton **Load demo scenario** dans Settings crée tout (projet Jira `FIELD`, ~90 tickets avec statuts et dates cohérents, espace Confluence `ANTE`, 3 pages de décisions, 1 contrat, 4 obligations, 3 décisions, 6 hypothèses, table d'absences). Un bouton **Reset demo** nettoie. Le scénario **converge vers un incident à J+16**, quelle que soit la date d'exécution (fenêtre contractuelle J−14 → J+16, calculée relativement à « aujourd'hui »).
+Un bouton **Load demo scenario** dans Settings crée tout (projet Jira `NFS`, ~90 tickets avec statuts et dates cohérents, espace Confluence `ANTE`, 3 pages de décisions, 1 contrat, 4 obligations, 3 décisions, 6 hypothèses, table d'absences). Un bouton **Reset demo** nettoie. Le scénario **converge vers un incident à J+16**, quelle que soit la date d'exécution (fenêtre contractuelle J−14 → J+16, calculée relativement à « aujourd'hui »).
 
 Choix d'implémentation (semaine 2) : le chargement tourne dans un **consumer d'événements asynchrones** (jusqu'à 15 min, les résolveurs sont limités à 25 s), avec progression par étape en KVS et reprise idempotente. Les personnes et prestataires sont des **labels** (`tech-karim`, `vendor-boreal`, `lot-3`) plutôt que des comptes ou des champs personnalisés : aucun utilisateur réel n'existe sur le site du juge, et les labels ne demandent aucune configuration. Les dates historiques sont portées par la **propriété d'issue `antemortem`** (Jira n'antidate pas `created` via l'API) ; `RestGraphSource` la lit en priorité et retombe sur `created` / `resolutiondate` / `duedate` pour les tickets réels.
 
@@ -355,9 +355,9 @@ Univers fictif (aucun nom réel) :
 - Client : **Meridian Telecom** · Prestataire : **Nordlink Field Services** (l'organisation qui utilise l'app)
 - Contrat *Maintenance curative réseau fixe 2026*, lots 1–4 ; l'histoire se passe sur le lot 3 (zone Nord).
 - Obligations : O-1 délai de prise en charge, O-2 taux de réitération, **O-3 95 % d'interventions sous 4 h/mois, pénalité 2 % de la facture mensuelle (2 M€ → 40 k€)**, O-4 reporting mensuel J+5.
-- Décision D-7 (COPIL de septembre) : « lot 3 reste chez le sous-traitant Boreal plutôt que d'internaliser », hypothèses : Boreal ≤ 25 tickets ouverts ; Karim (seul habilité HTA côté Nordlink) disponible jusqu'à fin décembre ; livraison des badges d'accès site (ticket FIELD-118) avant le 1er décembre.
-- Ce qui se passe dans les données : Boreal à 31 tickets ouverts (capacité dépassée) ; Karim réaffecté sur le lot 1 depuis J−3 (hypothèse brisée) ; le ticket « Site access badges » (dû J+2) bloqué par « Badge supplier contract amendment » sans mouvement depuis 9 jours ; ratio O-3 à 93,0 % (40/43) avec 11 tickets ouverts dont 6 proches des 4 h ; un ticket créé J−1 réaffecte 4 interventions lot 3 à Helios (contradiction de D-7). Les clés Jira sont attribuées au chargement (pas de `FIELD-118` fixe).
-- Résultat attendu : post-mortem *Incident 2026-12-14 — Meridian contract, Lot 3 SLA breach*, probabilité ~0,78, coût 40 000 €, 4 actions correctives (débloquer FIELD-097, réaffecter Karim ou habiliter un second technicien, plafonner Boreal, acter formellement l'écart à D-7).
+- Décision D-7 (COPIL de septembre) : « lot 3 reste chez le sous-traitant Boreal plutôt que d'internaliser », hypothèses : Boreal ≤ 25 tickets ouverts ; Karim (seul habilité HTA côté Nordlink) disponible jusqu'à fin décembre ; livraison des badges d'accès site (ticket NFS-118) avant le 1er décembre.
+- Ce qui se passe dans les données : Boreal à 31 tickets ouverts (capacité dépassée) ; Karim réaffecté sur le lot 1 depuis J−3 (hypothèse brisée) ; le ticket « Site access badges » (dû J+2) bloqué par « Badge supplier contract amendment » sans mouvement depuis 9 jours ; ratio O-3 à 93,0 % (40/43) avec 11 tickets ouverts dont 6 proches des 4 h ; un ticket créé J−1 réaffecte 4 interventions lot 3 à Helios (contradiction de D-7). Les clés Jira sont attribuées au chargement (pas de `NFS-118` fixe).
+- Résultat attendu : post-mortem *Incident 2026-12-14 — Meridian contract, Lot 3 SLA breach*, probabilité ~0,78, coût 40 000 €, 4 actions correctives (débloquer NFS-097, réaffecter Karim ou habiliter un second technicien, plafonner Boreal, acter formellement l'écart à D-7).
 - Déroulé « averted » pour la vidéo : passer 2 actions à Done → relancer l'analyse → probabilité 0,41 → page archivée dans *Averted incidents*, *Estimated cost avoided: €40,000*.
 
 Le même scénario sert aux tests automatisés du moteur (snapshot du post-mortem généré).
@@ -374,7 +374,7 @@ Chaque semaine se termine par : déploiement sur le site de dev, **installation 
 | 2 | 3 – 9 nov | Modèle (§5) : repos, CRUD obligations/décisions/hypothèses, `RestGraphSource`, **scénario de démo seed/reset** | Bouton *Load demo* → données visibles dans Jira/Confluence et dans l'app |
 | 3 | 10 – 16 nov | Moteur partie 1 : détecteurs de signaux + chaînes + projection ; tests snapshot | *Run analysis now* produit des `forecast` cohérents sur la démo |
 | 4 | 17 – 23 nov | Moteur partie 2 : narratif, création de la page Confluence, tickets d'actions, cycle de vie (published → averted) | Le post-mortem du 14/12 existe dans Confluence, les actions dans Jira, l'« averted » fonctionne |
-| 5 | 24 – 30 nov | Rovo agent + actions ; `TwgGraphSource` si EAP ; issue panel ; **écriture du script vidéo** | Agent répond à *what is my next post-mortem?* ; panel visible sur FIELD-118 |
+| 5 | 24 – 30 nov | Rovo agent + actions ; `TwgGraphSource` si EAP ; issue panel ; **écriture du script vidéo** | Agent répond à *what is my next post-mortem?* ; panel visible sur NFS-118 |
 | 6 | 1 – 7 déc | Design pass complet du command center et de la vue post-mortem ; états vides ; Settings ; **gel du périmètre** ; choix du bonus | Parcours complet sans friction, sur un site vierge, par quelqu'un qui n'a pas développé |
 | 7 | 8 – 14 déc | Durcissement : erreurs, permissions, perf des requêtes Jira (pagination, champs), `JUDGE_INSTRUCTIONS.md`, lien d'installation, **tournage vidéo** | Installation par un tiers en < 10 min en suivant les instructions ; rushes vidéo prêts |
 | 8 | 15 – 22 déc | Montage, description Devpost, **soumission le 15**, puis corrections mineures tolérées par les règles (on ne touche plus au code après soumission) | Soumission validée ; swag réclamé |

@@ -15,7 +15,7 @@ export const PROGRESS_KEY = 'demo.progress';
 export const STATE_KEY = 'demo.state';
 
 const STEPS = [
-  ['project', 'Create Jira project FIELD'],
+  ['project', 'Create Jira project NFS'],
   ['issues', 'Create ~90 field-service issues'],
   ['transitions', 'Resolve historical interventions'],
   ['properties', 'Backdate issue timelines'],
@@ -23,7 +23,7 @@ const STEPS = [
   ['space', 'Create Confluence space ANTE'],
   ['pages', 'Write steering-committee pages'],
   ['model', 'Record contract, obligations, decisions, assumptions'],
-  ['settings', 'Point Antemortem at FIELD / ANTE'],
+  ['settings', 'Point Antemortem at NFS / ANTE'],
 ];
 
 export async function getProgress() {
@@ -229,7 +229,7 @@ async function stepModel({ scenario, state }) {
       decided_by: [],
       source_type: 'confluence_page',
       source_id: page?.id ?? null,
-      source_url: page?.webui ?? null,
+      source_url: page?.webui ? `/wiki${page.webui}` : null,
       alternatives_rejected: d.alternatives_rejected,
       status: 'active',
     });

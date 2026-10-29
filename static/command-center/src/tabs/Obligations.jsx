@@ -140,7 +140,7 @@ function ObligationEditor({ initial, contracts, onClose, onSaved, notify }) {
         </>)}
         <Field label="JQL scope" hint="the issues that feed the measure">
           <div className="inline">
-            <input className="grow" value={form.jql_scope ?? ''} onChange={set('jql_scope')} placeholder='project = FIELD AND labels = lot-3' />
+            <input className="grow" value={form.jql_scope ?? ''} onChange={set('jql_scope')} placeholder='project = "NFS" AND labels = lot-3' />
             <button type="button" className="btn subtle" onClick={test} disabled={!form.jql_scope}>Test</button>
           </div>
           {jqlResult && (

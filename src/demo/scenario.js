@@ -14,8 +14,8 @@
  */
 
 export const DEMO = {
-  projectKey: 'FIELD',
-  projectName: 'Field Operations — Meridian',
+  projectKey: 'NFS', // NB: 'FIELD' is a reserved JQL word — never use it as a project key
+  projectName: 'Nordlink Field Services — Meridian',
   spaceKey: 'ANTE',
   spaceName: 'Nordlink Operations',
   client: 'Meridian Telecom',
@@ -203,28 +203,28 @@ export function buildScenario(today = new Date()) {
     {
       ref: 'O-1', code: 'O-1', title: 'Time to acknowledge ≤ 30 min (all lots)',
       description: '98 % of incidents acknowledged within 30 minutes, measured monthly.',
-      metric_type: 'ratio_within_sla', jql_scope: `project = ${DEMO.projectKey} AND labels = intervention`,
+      metric_type: 'ratio_within_sla', jql_scope: `project = "${DEMO.projectKey}" AND labels = intervention`,
       sla_hours: 0.5, threshold: 0.98, period: 'custom', penalty_type: 'fixed', penalty_value: 5000, invoice_basis: null,
       status: 'active', healthy: true,
     },
     {
       ref: 'O-2', code: 'O-2', title: 'Repeat-fault rate ≤ 5 % (lot 2)',
       description: 'No more than 5 % of interventions re-opened within 7 days.',
-      metric_type: 'count_max', jql_scope: `project = ${DEMO.projectKey} AND labels = lot-2 AND labels = reopened`,
+      metric_type: 'count_max', jql_scope: `project = "${DEMO.projectKey}" AND labels = lot-2 AND labels = reopened`,
       sla_hours: null, threshold: 3, period: 'custom', penalty_type: 'fixed', penalty_value: 8000, invoice_basis: null,
       status: 'active', healthy: true,
     },
     {
       ref: 'O-3', code: 'O-3', title: 'Restoration ≤ 4 h on 95 % of lot 3 interventions',
       description: 'Curative interventions on lot 3 (Northern zone) restored within 4 hours for at least 95 % of cases over the contractual period. Below threshold: 2 % penalty on the monthly invoice.',
-      metric_type: 'ratio_within_sla', jql_scope: `project = ${DEMO.projectKey} AND labels = lot-3 AND labels = intervention`,
+      metric_type: 'ratio_within_sla', jql_scope: `project = "${DEMO.projectKey}" AND labels = lot-3 AND labels = intervention`,
       sla_hours: 4, threshold: 0.95, period: 'custom', penalty_type: 'percent_of_invoice', penalty_value: 2, invoice_basis: 2_000_000,
       status: 'active', healthy: false,
     },
     {
       ref: 'O-4', code: 'O-4', title: 'Monthly service report delivered by J+5',
       description: 'Consolidated service report delivered within five working days of period end.',
-      metric_type: 'deadline', jql_scope: `project = ${DEMO.projectKey} AND labels = reporting`,
+      metric_type: 'deadline', jql_scope: `project = "${DEMO.projectKey}" AND labels = reporting`,
       sla_hours: null, threshold: null, period: 'custom', penalty_type: 'fixed', penalty_value: 2500, invoice_basis: null,
       status: 'active', healthy: true,
     },
@@ -266,7 +266,7 @@ export function buildScenario(today = new Date()) {
         { statement: 'Boreal keeps no more than 25 open interventions across all lots.', kind: 'capacity', params: { teamRef: 'vendor-boreal', maxOpenIssues: 25 } },
         { statement: 'Karim Benali (only HV-qualified engineer on the Nordlink side) is available to the Northern zone until the end of the period.', kind: 'person_available', params: { personRef: DEMO.people.karim.ref, displayName: DEMO.people.karim.name, until: window.endsOn } },
         { statement: 'Site access badges for the September sites are delivered before the badge deadline.', kind: 'dependency_done_by', params: { issueRef: badges.id, date: ymd(day(2)) } },
-        { statement: 'Northern-zone interventions are routed to Boreal, not to another vendor.', kind: 'routing', params: { scopeJql: `project = ${DEMO.projectKey} AND labels = lot-3 AND labels = intervention AND statusCategory != Done`, labelPrefix: 'vendor-', expected: 'vendor-boreal' } },
+        { statement: 'Northern-zone interventions are routed to Boreal, not to another vendor.', kind: 'routing', params: { scopeJql: `project = "${DEMO.projectKey}" AND labels = lot-3 AND labels = intervention AND statusCategory != Done`, labelPrefix: 'vendor-', expected: 'vendor-boreal' } },
       ],
       obligationRefs: ['O-3'],
     },

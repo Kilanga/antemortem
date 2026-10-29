@@ -72,13 +72,13 @@ export default function Settings({ overview, notify, onChanged }) {
         <Card title="Demo scenario" status={settings.demoLoaded ? 'ok' : 'idle'} statusLabel={settings.demoLoaded ? 'Loaded' : 'Not loaded'}>
           <p className="hint">
             A fictional field-service contract (Meridian Telecom ↔ Nordlink Field Services) whose data converges on a
-            contract-penalty incident 16 days from today. Creates Jira project <code>FIELD</code>, Confluence space{' '}
+            contract-penalty incident 16 days from today. Creates Jira project <code>NFS</code>, Confluence space{' '}
             <code>ANTE</code>, one contract, four obligations, three decisions with their assumptions. Runs in the background;
             allow one to two minutes.
           </p>
           <div className="actions left">
-            <ConfirmButton className="btn" label={settings.demoLoaded ? 'Reload demo scenario' : 'Load demo scenario'} confirmLabel="Create FIELD + ANTE — confirm" onConfirm={loadDemo} disabled={active} />
-            <ConfirmButton className="btn subtle" label="Reset demo" confirmLabel="Delete FIELD + ANTE — confirm" onConfirm={resetDemo} disabled={active} />
+            <ConfirmButton className="btn" label={settings.demoLoaded ? 'Reload demo scenario' : 'Load demo scenario'} confirmLabel="Create NFS + ANTE — confirm" onConfirm={loadDemo} disabled={active} />
+            <ConfirmButton className="btn subtle" label="Reset demo" confirmLabel="Delete NFS + ANTE — confirm" onConfirm={resetDemo} disabled={active} />
           </div>
           {active && (
             <div className="progress">
@@ -118,7 +118,7 @@ export default function Settings({ overview, notify, onChanged }) {
         <Card title="Targets">
           <form className="form" onSubmit={save}>
             <Field label="Confluence space key" hint="where projected incidents are published"><input value={form.confluenceSpaceKey} onChange={(e) => setForm({ ...form, confluenceSpaceKey: e.target.value.toUpperCase() })} placeholder="e.g. ANTE" /></Field>
-            <Field label="Jira project key" hint="where corrective actions are created"><input value={form.actionsProjectKey} onChange={(e) => setForm({ ...form, actionsProjectKey: e.target.value.toUpperCase() })} placeholder="e.g. FIELD" /></Field>
+            <Field label="Jira project key" hint="where corrective actions are created"><input value={form.actionsProjectKey} onChange={(e) => setForm({ ...form, actionsProjectKey: e.target.value.toUpperCase() })} placeholder="e.g. NFS" /></Field>
             <Field label="Publish threshold" hint="forecast probability above which a post-mortem is written"><input type="number" min="0.05" max="0.98" step="0.05" value={form.publishThreshold} onChange={(e) => setForm({ ...form, publishThreshold: e.target.value })} /></Field>
             <Field label="Graph source" hint="Teamwork Graph needs the EAP scope; falls back to REST"><select value={form.graphSource} onChange={(e) => setForm({ ...form, graphSource: e.target.value })}><option value="rest">Jira & Confluence REST</option><option value="auto">Auto (Teamwork Graph when available)</option><option value="twg">Teamwork Graph</option></select></Field>
             <div className="actions left"><button className="btn" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button></div>
