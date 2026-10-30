@@ -77,3 +77,8 @@ test('typed assumption lines parse; bare lines stay freeform', async () => {
   const d = parseAssumptionLine('Badges land :: dependency_done_by :: issueKey=NFS-87, date=2026-11-30, bogus=1');
   assert.deepEqual(d.params, { issueKey: 'NFS-87', date: '2026-11-30' });
 });
+
+test('the source decision is a real link in storage format', () => {
+  const html = renderStorage(doc, { status: 'published' });
+  assert.match(html, /<h2>Source decision<\/h2>\n<ul><li><a href="https:\/\/x\.atlassian\.net\/wiki/);
+});

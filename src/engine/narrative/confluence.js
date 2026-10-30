@@ -37,7 +37,7 @@ export function renderStorage(doc, { status = 'published', averted = null, actio
   }
 
   if (doc.sections.evidence.length) {
-    parts.push(h2('Source decision'), ul(doc.sections.evidence.map((e) => (e.url ? `<a href="${esc(e.url)}">${esc(e.label)}</a>` : esc(e.label)), true)));
+    parts.push(h2('Source decision'), ul(doc.sections.evidence.map((e) => (e.url ? `<a href="${esc(e.url)}">${esc(e.label)}</a>` : esc(e.label))), true));
   }
 
   parts.push(h2('How this forecast was computed'), ul(doc.sections.method));
