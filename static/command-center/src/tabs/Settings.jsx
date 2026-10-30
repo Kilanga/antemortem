@@ -17,8 +17,6 @@ export default function Settings({ overview, notify, onChanged }) {
   // Poll while a demo job runs.
   useEffect(() => {
     const active = progress.status === 'running' || progress.status === 'resetting';
-  const [hook, setHook] = useState(null);
-  const revealHook = async () => { const r = await api.getWebtrigger(); setHook(r.ok ? r : { error: r.error }); };
     if (active && !timer.current) {
       timer.current = setInterval(async () => {
         const r = await api.getDemoProgress();
