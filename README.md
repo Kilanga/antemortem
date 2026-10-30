@@ -47,3 +47,6 @@ test/                        node --test, with an in-memory graph source
 - After deleting and recreating a project with the same key, `key in (...)` can return the old issues; read issues directly by key.
 - Forge SQL: `timeoutSeconds` only on scheduled triggers and consumers; `id: undefined` in a spread clobbers a generated id; `SIGNAL` is a reserved table name.
 - Forge Custom UI blocks `window.confirm`; `@forge/bridge` throws at import outside a product.
+- Forge SQL and KVS are provisioned **per installation**: the Confluence install of the app cannot read what the Jira install stored. The Confluence macro therefore reads the published pages, not the database.
+- A React hook that ends up inside an effect (bad merge) renders a blank iframe with no error in the parent console; the mock page hides it by luck of ordering.
+- Corrective actions that merely exist must not lower the forecast, or publishing an incident averts it by itself on the next hourly run.
