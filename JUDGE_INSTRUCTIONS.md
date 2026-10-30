@@ -7,14 +7,14 @@ Everything below runs on a **fresh Atlassian Cloud site with no data**. The app 
 ## Prerequisites
 
 - A Jira Software site with Confluence on the same site, where you are a **Jira administrator** (the app creates a Jira project and a Confluence space for the demo).
-- **Rovo** available on the site (needed only for the agent part; the rest works without it).
+- **Rovo Chat** available on the site — needed **only** for the two agent steps in section 6. Everything else (install, demo, analysis, the post-mortem, the lifecycle, the issue panel, the macro, what-if, history, portfolio) works on a site without Rovo; the agent is simply not shown. Rovo Chat comes with paid Premium/Enterprise plans (and Standard where rolled out); free and developer-licence sites do not have it.
 - The installation link from the submission.
 
 ## 1. Install (2 minutes)
 
 1. Open the installation link and install Antemortem on **Jira**, then open the link again and install it on **Confluence** (the app needs both; Forge asks for each product separately).
 2. Accept the scopes. `manage:jira-configuration` and `write:confluence-space` are used **only** by the demo loader, to create and delete the demo project and space; the forecasting engine itself only reads work items and writes pages and issues.
-3. In Jira, open **Apps → Antemortem** (left sidebar). You should see the command center with the **Overview** tab. Within about a minute of installation every table in *Health* shows `ready`; if one is still `missing`, click **Repair database** (Forge applies the schema asynchronously).
+3. On a brand-new Jira site, Jira first shows a "set up your space / create a project" wizard. Skip it (or create any project) — Antemortem does not need it; the demo creates its own project. Then, in Jira, open **Apps → Antemortem** (left sidebar). You should see the command center with the **Overview** tab. Within about a minute of installation every table in *Health* shows `ready`; if one is still `missing`, click **Repair database** (Forge applies the schema asynchronously).
 
 ## 2. Load the demo scenario (3 minutes)
 
@@ -54,8 +54,8 @@ The demo data is relative to the moment it was loaded; figures below are what yo
 ## 6. Where it meets people (1 minute)
 
 - **Issue panel**: open issue **NFS-87** (*Site access badges*). The *Antemortem* panel on the right shows the broken assumption it is part of, the decision behind it and the projected incident it appears in.
-- **Rovo agent**: open Rovo chat, pick the **Antemortem** agent and ask *"What is my next post-mortem?"* or *"Why is O-3 at risk?"*. The agent answers only from the engine's data through its actions (no invented figures). If you averted the incident in step 5, it says so and names the last averted incident.
-- **Decisions from a page**: paste the URL of the *D-7* steering-committee page (space ANTE) to the agent and ask it to record the decision. It reads the page, proposes the decision and typed assumptions, and records nothing until you confirm. The engine stays deterministic: the agent only helps with data entry.
+- **Rovo agent** *(requires Rovo Chat on the site — skip otherwise)*: open Rovo chat, pick the **Antemortem** agent and ask *"What is my next post-mortem?"* or *"Why is O-3 at risk?"*. The agent answers only from the engine's data through its actions (no invented figures). If you averted the incident in step 5, it says so and names the last averted incident.
+- **Decisions from a page** *(requires Rovo Chat)*: paste the URL of the *D-7* steering-committee page (space ANTE) to the agent and ask it to record the decision. It reads the page, proposes the decision and typed assumptions, and records nothing until you confirm. The engine stays deterministic: the agent only helps with data entry.
 - **Confluence macro**: edit any page in space ANTE, type `/Antemortem` and insert the macro: the projected incidents, their probability and cost, on the page where the contract lives.
 
 ## 7. Clean up
