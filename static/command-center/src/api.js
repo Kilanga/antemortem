@@ -2,7 +2,16 @@
  * Single place where the frontend talks to resolvers. Every call returns the
  * resolver's JSON; a transport failure is normalised into { ok: false, error }.
  */
-import { invoke } from '@forge/bridge';
+import { isMock, mockInvoke } from './mock.js';
+
+// @forge/bridge throws at import time outside an Atlassian product, so it is
+// loaded lazily; mock mode (?mock=1) never touches it.
+let bridge = null;
+async function invoke(name, payload) {
+  if (isMock()) return mockInvoke(name, payload);
+  bridge ??= await import('@forge/bridge');
+  return bridge.invoke(name, payload);
+}
 
 async function call(name, payload) {
   try {

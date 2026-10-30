@@ -32,8 +32,8 @@ export default function Decisions({ notify }) {
     <>
       <section className="hero compact">
         <div>
-          <p className="eyebrow">Primitive 2 of 3</p>
-          <h1>Decisions and what they rest on</h1>
+          <p className="dateline">What was decided, and what it rests on</p>
+          <h1>Decisions</h1>
           <p className="lede">
             "We chose A over B because we assumed C." Nothing in the platform records C, so nothing notices when C stops
             being true. Each assumption below is typed so the engine can watch it against the work graph.
@@ -60,8 +60,8 @@ export default function Decisions({ notify }) {
                 <div className="row-title"><strong>{d.title}</strong> <span className={`pill ${d.status === 'active' ? 'ok' : 'warn'}`}>{d.status}</span></div>
                 <div className="row-sub muted">
                   Decided {fmtDate(d.decided_at)}
-                  {d.supports?.length ? ` · supports ${d.supports.map((s) => s.code).join(', ')}` : ''}
-                  {d.source_url ? <> · <a href={d.source_url} target="_blank" rel="noreferrer">source</a></> : ''}
+                  {d.supports?.length ? `, supports ${d.supports.map((s) => s.code).join(', ')}` : ''}
+                  {d.source_url ? <>. <a href={d.source_url} target="_blank" rel="noreferrer">Read the source</a></> : ''}
                 </div>
               </div>
               <div className="row-actions">
@@ -76,7 +76,7 @@ export default function Decisions({ notify }) {
                   <li key={a.id}>
                     <span className={`dot ${STATUS_PILL[a.status] ?? 'idle'}`} title={a.status} />
                     <span>{a.statement}</span>
-                    <code className="code-pill">{a.kind}</code>
+                    <span className="code-pill">{(KINDS.find((k) => k[0] === a.kind)?.[1] ?? a.kind).toLowerCase()}</span>
                   </li>
                 ))}
               </ul>

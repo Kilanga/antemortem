@@ -36,7 +36,7 @@ export default function Obligations({ notify }) {
     <>
       <section className="hero compact">
         <div>
-          <p className="eyebrow">Primitive 1 of 3</p>
+          <p className="dateline">What the contract requires</p>
           <h1>Obligations</h1>
           <p className="lede">
             A measurable rule from a contract, tied to the Jira issues that feed it. Jira has SLAs per ticket; it has no
@@ -74,9 +74,9 @@ export default function Obligations({ notify }) {
                 <strong>{o.title}</strong>
               </div>
               <div className="row-sub muted">
-                {o.contract?.name ?? 'No contract'} · {METRICS.find((m) => m[0] === o.metric_type)?.[1] ?? o.metric_type}
-                {o.sla_hours != null && ` · SLA ${o.sla_hours} h`}
-                {o.threshold != null && ` · threshold ${o.metric_type === 'ratio_within_sla' ? `${Math.round(o.threshold * 100)} %` : o.threshold}`}
+                {o.contract?.name ?? 'No contract'}. {METRICS.find((m) => m[0] === o.metric_type)?.[1] ?? o.metric_type}
+                {o.sla_hours != null && `, SLA ${o.sla_hours} h`}
+                {o.threshold != null && `, bar ${o.metric_type === 'ratio_within_sla' ? `${Math.round(o.threshold * 100)} %` : o.threshold}`}.
               </div>
               {o.jql_scope && <code className="jql">{o.jql_scope}</code>}
             </div>

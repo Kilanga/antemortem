@@ -67,8 +67,8 @@ export default function Settings({ overview, notify, onChanged }) {
     <>
       <section className="hero compact">
         <div>
-          <p className="eyebrow">Settings</p>
-          <h1>Where Antemortem reads and writes</h1>
+          <p className="dateline">Where Antemortem reads and writes</p>
+          <h1>Settings</h1>
         </div>
       </section>
 

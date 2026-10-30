@@ -30,9 +30,11 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
     <>
       <section className="hero">
         <div>
-          <p className="eyebrow">{next ? 'Projected incident' : modelObjects ? 'All clear' : 'Getting started'}</p>
+          <p className={`dateline ${next ? 'risk' : ''}`}>
+            {next ? `Projected for ${new Date(next.forecast.projected_breach_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}` : modelObjects ? `As of ${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}` : 'Nothing analysed yet'}
+          </p>
           <h1>
-            {next ? `Next post-mortem in ${daysTo} day${daysTo === 1 ? '' : 's'}.` : modelObjects ? 'No incident on the horizon.' : 'Nothing to forecast yet.'}
+            {next ? `The next post-mortem is ${daysTo} day${daysTo === 1 ? '' : 's'} away.` : modelObjects ? 'No incident on the horizon.' : 'Nothing to forecast yet.'}
           </h1>
           <p className="lede">
             {next ? (
@@ -40,7 +42,7 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
                 <strong>{next.obligation.code}</strong> — {next.obligation.title}. Probability{' '}
                 <strong>{Math.round(next.forecast.probability * 100)} %</strong>, projected cost{' '}
                 <strong>{fmtMoney(next.forecast.projected_cost, next.forecast.currency)}</strong> on {fmtDate(next.forecast.projected_breach_date)}.
-                {atRisk.length > 1 && ` ${atRisk.length - 1} other obligation(s) at risk; ${fmtMoney(totalAtRisk)} at stake in total.`}
+                {atRisk.length > 1 && ` ${atRisk.length - 1} more obligation${atRisk.length > 2 ? 's are' : ' is'} at risk, ${fmtMoney(totalAtRisk)} at stake in total.`}
               </>
             ) : modelObjects ? (
               'Every active obligation holds, and the assumptions behind the decisions they depend on still stand.'
@@ -140,7 +142,7 @@ function ForecastRow({ item }) {
           {m && m.kind === 'ratio_within_sla' && (
             <div className="meter" title={`current ${Math.round(m.current * 100)} % · projected ${Math.round(m.projected * 100)} % · threshold ${Math.round(m.threshold * 100)} %`}>
               <div className="meter-bar"><span className="meter-cur" style={{ width: `${m.current * 100}%` }} /><span className="meter-proj" style={{ left: `${m.projected * 100}%` }} /><span className="meter-thr" style={{ left: `${m.threshold * 100}%` }} /></div>
-              <div className="meter-legend muted small">current {Math.round(m.current * 100)} % · projected {Math.round(m.projected * 100)} % · bar {Math.round(m.threshold * 100)} %</div>
+              <div className="meter-legend muted small">{Math.round(m.current * 100)} % today, {Math.round(m.projected * 100)} % projected, {Math.round(m.threshold * 100)} % required</div>
             </div>
           )}
           {!healthy && signals.length > 0 && (
@@ -149,7 +151,7 @@ function ForecastRow({ item }) {
         </div>
         <div className="row-side">
           {!healthy && <div className="penalty">{fmtMoney(f.projected_cost, f.currency)}</div>}
-          <div className="muted small">{f ? `computed ${fmtDateTime(f.computed_at)}` : ''}</div>
+          <div className="muted small">{f ? `analysed ${fmtDateTime(f.computed_at)}` : ''}</div>
           {f && !healthy && <button className="linklike" onClick={() => setOpen(!open)}>{open ? 'Hide chain' : 'Show chain'}</button>}
         </div>
       </div>

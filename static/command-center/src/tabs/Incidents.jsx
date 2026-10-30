@@ -24,16 +24,16 @@ export function IncidentCard({ incident: fi, notify, onChanged }) {
     <article className="incident">
       <header className="incident-head">
         <div>
-          <p className="eyebrow">Projected post-mortem · in {daysTo} day{daysTo === 1 ? '' : 's'}</p>
+          <p className="dateline risk">A post-mortem written {daysTo} day{daysTo === 1 ? '' : 's'} before its incident</p>
           <h2 className="incident-title">{fi.title}</h2>
           <p className="muted">{fi.summary}</p>
         </div>
         <div className="incident-side">
-          <div className="big">{fmtMoney(fi.actions?.cost, fi.actions?.currency)}</div>
-          <div className={`pill ${pct >= 60 ? 'danger' : 'warn'}`}>{pct} % probability</div>
+          <div className="fact"><span className="big">{fmtMoney(fi.actions?.cost, fi.actions?.currency)}</span><span className="fact-label">projected penalty</span></div>
+          <div className="fact"><span className="big">{pct} %</span><span className="fact-label">probability today</span></div>
           <div className="incident-links">
-            {fi.confluence_page_url && <a className="btn" href={fi.confluence_page_url} target="_blank" rel="noreferrer">Open post-mortem</a>}
-            <button className="linklike" onClick={() => setOpen(!open)}>{open ? 'Hide actions' : 'Show actions'}</button>
+            {fi.confluence_page_url && <a className="btn" href={fi.confluence_page_url} target="_blank" rel="noreferrer">Open the post-mortem</a>}
+            <button className="linklike" onClick={() => setOpen(!open)}>{open ? 'Hide corrective actions' : 'Show corrective actions'}</button>
           </div>
         </div>
       </header>
@@ -42,7 +42,7 @@ export function IncidentCard({ incident: fi, notify, onChanged }) {
 
       {open && (
         <div className="incident-body">
-          <div className="section-title">Corrective actions — {done}/{actions.length} done</div>
+          <div className="section-title">Corrective actions, {done} of {actions.length} done</div>
           {actions.length ? (
             <ul className="actions-list">
               {actions.map((a) => (
@@ -54,7 +54,7 @@ export function IncidentCard({ incident: fi, notify, onChanged }) {
               ))}
             </ul>
           ) : <p className="muted small">No corrective actions were created (check the Jira project key in Settings).</p>}
-          <p className="hint">Close these in Jira, then run the analysis: when the probability drops under the publish threshold, this post-mortem archives itself under <em>Averted incidents</em>.</p>
+          <p className="hint">Close them in Jira and run the analysis again. When the probability drops below the publish threshold, this post-mortem archives itself under Averted incidents.</p>
           <div className="inline dismiss">
             <input className="grow" placeholder="Reason (optional) — e.g. penalty waived by the client" value={reason} onChange={(e) => setReason(e.target.value)} />
             <ConfirmButton className="btn subtle" label="Dismiss" confirmLabel="Dismiss — confirm" onConfirm={dismiss} />
@@ -69,7 +69,7 @@ export function AvertedLedger({ items, costAvoided }) {
   if (!items.length) return <p className="muted">No incident has been averted yet. When a projected post-mortem's probability drops below the publish threshold, it lands here with the cost it avoided.</p>;
   return (
     <>
-      <div className="ledger-total"><span className="big">{fmtMoney(costAvoided)}</span><span className="muted"> of penalties that never happened</span></div>
+      <div className="ledger-total"><span className="big">{fmtMoney(costAvoided)}</span><span className="muted"> in penalties that never happened</span></div>
       <section className="list">
         {items.map((fi) => (
           <article key={fi.id} className={`row column ledger ${fi.status}`}>
@@ -80,9 +80,9 @@ export function AvertedLedger({ items, costAvoided }) {
                   <strong>{fi.title}</strong>
                 </div>
                 <div className="row-sub muted">
-                  {fi.obligation?.code} · projected for {fmtDate(fi.incident_date)}
-                  {fi.status === 'averted' && ` · averted ${fmtDateTime(fi.averted_at)}`}
-                  {fi.status === 'dismissed' && fi.dismissed_reason && ` · ${fi.dismissed_reason}`}
+                  {fi.obligation?.code}, projected for {fmtDate(fi.incident_date)}
+                  {fi.status === 'averted' && `, averted ${fmtDateTime(fi.averted_at)}`}
+                  {fi.status === 'dismissed' && fi.dismissed_reason && ` — ${fi.dismissed_reason}`}
                 </div>
               </div>
               <div className="row-side">

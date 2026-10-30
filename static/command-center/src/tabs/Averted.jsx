@@ -9,7 +9,7 @@ export default function Averted() {
     <>
       <section className="hero compact">
         <div>
-          <p className="eyebrow">The other ledger</p>
+          <p className="dateline">The other ledger</p>
           <h1>Incidents that never happened</h1>
           <p className="lede">Every page here was a post-mortem written before its incident. The corrective actions were completed in time, and the document archived itself.</p>
         </div>
