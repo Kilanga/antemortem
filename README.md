@@ -6,6 +6,7 @@ An Atlassian Forge app for Jira, Confluence and Rovo, built for **Codegeist 2026
 
 - **Project book (French):** [BUILD.md](BUILD.md) — concept, architecture, data model, engine, demo scenario, plan.
 - **For judges (English):** [JUDGE_INSTRUCTIONS.md](JUDGE_INSTRUCTIONS.md) — install and test in 10 minutes.
+- **What it does, in one screen:** obligations, decisions with typed assumptions, an explainable forecast, a post-mortem published in the future, what-if and history on the causal chain, a portfolio across contracts, an issue panel, a Confluence macro and a Rovo agent that proposes decisions from pages.
 - **Submission text:** [DEVPOST.md](DEVPOST.md). **Video plan:** [DEMO_SCRIPT.md](DEMO_SCRIPT.md). **History:** [CHANGELOG.md](CHANGELOG.md). **Out of scope:** [BACKLOG.md](BACKLOG.md).
 
 ## Develop

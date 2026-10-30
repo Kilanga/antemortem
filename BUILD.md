@@ -281,6 +281,7 @@ class GraphSource {
 | `decision_contradicted` | Une hypothèse `routing` d'une décision active est violée : un ticket du `scopeJql` porte un label `labelPrefix*` différent de `expected` (ex. décision « lot 3 → Boreal », ticket lot 3 étiqueté `vendor-helios`) | ticket, décision, label divergent |
 | `stale_critical_issue` | Ticket dans le `jql_scope` d'une obligation sans mise à jour depuis N jours et échéance proche | clé, jours |
 | `single_point_of_failure` | ≥ X % des tickets d'une obligation sur une seule personne | account, % |
+| `person_silent` | Une personne détient ≥ 2 tickets ouverts du périmètre, aucun touché depuis ≥ 5 jours (indisponibilité de fait, sans calendrier) | personne, tickets, jours |
 
 Chaque détecteur retourne `[]` ou des signaux avec `evidence` suffisante pour écrire une phrase de timeline **sans aucune autre requête**.
 
@@ -366,7 +367,7 @@ Le même scénario sert aux tests automatisés du moteur (snapshot du post-morte
 
 ## 9. Plan sur 8 semaines (29 oct → 22 déc)
 
-**État au 30 oct** : semaines 1–3 livrées et vérifiées sur site ; semaines 4–7 livrées dans le dépôt (narratif, publication, cycle de vie, agent Rovo, panneau, durcissement, instructions juges, script vidéo, passage design) **en attente de déploiement et de vérification**. Reste : vérification 4–5, test juge sur le site vierge, vidéo, soumission.
+**État au 30 oct** : semaines 1–3 livrées et vérifiées sur site ; semaines 4–7 livrées dans le dépôt (narratif, publication, cycle de vie, agent Rovo, panneau, durcissement, instructions juges, script vidéo, passage design), puis v0.7 (passe de densité) et v0.8 (what-if, history/backtest, détecteur `person_silent`, Portfolio, macro Confluence, décisions proposées depuis une page par l'agent) — **le tout en attente de déploiement et de vérification sur site** (version majeure : nouveau module `macro`, nouvelle action Rovo). Reste : déploiement + vérification 4–8, test juge sur le site vierge, vidéo, soumission.
 
 Chaque semaine se termine par : déploiement sur le site de dev, **installation depuis zéro sur le site vierge**, et une courte note dans `CHANGELOG.md`. Règle : à tout moment, `main` doit produire une app installable qui fait *quelque chose* de montrable.
 
@@ -449,7 +450,7 @@ Tournage : écran 1920×1080, zoom navigateur 110 %, curseur visible, pas de not
 
 ## 13. Hors périmètre (va dans `BACKLOG.md`, pas dans le code)
 
-Import automatique de contrats PDF ; connecteur TWG sortant (publier nos objets dans le graphe) ; simulateur what-if ; multi-devises ; notifications Slack/Teams ; agent qui commente de lui-même dans les tickets ; Marketplace listing (bonus abandonné : la review prend trop de temps pour ce calendrier).
+Import automatique de contrats PDF ; connecteur TWG sortant (publier nos objets dans le graphe) ; what-if sur les dates ; multi-devises ; notifications Slack/Teams ; agent qui commente de lui-même dans les tickets ; Marketplace listing (bonus abandonné : la review prend trop de temps pour ce calendrier).
 
 ---
 

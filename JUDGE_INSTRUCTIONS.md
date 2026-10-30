@@ -32,6 +32,9 @@ Everything below runs on a **fresh Atlassian Cloud site with no data**. The app 
 1. Back on **Overview**, click **Run analysis now**. The analysis runs in the background (10–40 s); the page refreshes when it is done.
 2. You should see **"Next post-mortem in 16 days."** — obligation **O-3** (*Restoration ≤ 4 h on 95 % of lot 3 interventions*) at **~80 % probability, €40,000**, and at the top a card titled *Incident <date> — Meridian Telecom, O-3 breach*.
 3. Click **Show chain** on O-3: a dated causal chain from the September steering-committee decision to the projected breach, and the arithmetic of the probability.
+4. **What if**: tick the checkbox on a chain event (for instance the engineer's reassignment) — the probability is recomputed without that evidence, nothing is written. Tick *every open issue restored within the SLA* to see that even then the period closes below 95 %: the three breaches already in the books weigh.
+5. **History**: click **History** on the O-3 row. The engine is replayed on the work as it stood every two days since the period started; the curve shows when the forecast crossed the publish threshold and how many days before the breach.
+6. The **Portfolio** tab shows the same from the contract's point of view: penalties projected, penalties at stake, which obligations hold.
 
 ## 4. Read the post-mortem of an incident that has not happened (2 minutes)
 
@@ -50,6 +53,8 @@ Everything below runs on a **fresh Atlassian Cloud site with no data**. The app 
 
 - **Issue panel**: open issue **NFS-87** (*Site access badges*). The *Antemortem* panel on the right shows the broken assumption it is part of, the decision behind it and the projected incident it appears in.
 - **Rovo agent**: open Rovo chat, pick the **Antemortem** agent and ask *"What is my next post-mortem?"* or *"Why is O-3 at risk?"*. The agent answers only from the engine's data through its actions (no invented figures). If you averted the incident in step 5, it says so and names the last averted incident.
+- **Decisions from a page**: paste the URL of the *D-7* steering-committee page (space ANTE) to the agent and ask it to record the decision. It reads the page, proposes the decision and typed assumptions, and records nothing until you confirm. The engine stays deterministic: the agent only helps with data entry.
+- **Confluence macro**: edit any page in space ANTE, type `/Antemortem` and insert the macro: the projected incidents, their probability and cost, on the page where the contract lives.
 
 ## 7. Clean up
 

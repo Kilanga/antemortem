@@ -7,7 +7,9 @@
  * engine computed from evidence.
  */
 import { query, parseJson } from '../db/client.js';
-import { futureIncidents, obligations, decisions, assumptions, linkObjects, hydrate, listObligationsWithContract } from '../db/repo/index.js';
+import { futureIncidents, obligations, decisions, assumptions, availability, linkObjects, hydrate, listObligationsWithContract } from '../db/repo/index.js';
+import { getPage } from '../confluence/client.js';
+import { searchIssues } from '../jira/client.js';
 import { getSiteUrl } from '../engine/publish.js';
 import { fmtMoney, longDate } from '../engine/narrative/index.js';
 
@@ -82,10 +84,15 @@ export async function recordDecision(payload) {
   const assumptionsText = payload?.assumptions ? String(payload.assumptions) : '';
   const code = payload?.obligationCode ? String(payload.obligationCode).trim().toUpperCase() : null;
 
-  const dec = await decisions.create({ title, statement, rationale, decided_at: new Date(), decided_by: [], source_type: 'manual', status: 'active', alternatives_rejected: [] });
-  const lines = assumptionsText.split(/\n|;/).map((s) => s.trim()).filter(Boolean).slice(0, 10);
+  const sourceUrl = payload?.sourceUrl ? String(payload.sourceUrl).trim().slice(0, 1024) : null;
+  const decidedAt = payload?.decidedAt && !Number.isNaN(Date.parse(payload.decidedAt)) ? new Date(payload.decidedAt) : new Date();
+  const dec = await decisions.create({ title, statement, rationale, decided_at: decidedAt, decided_by: [], source_type: sourceUrl ? 'confluence_page' : 'manual', source_url: sourceUrl, status: 'active', alternatives_rejected: [] });
+  const lines = assumptionsText.split(/\n/).map((s) => s.trim()).filter(Boolean).slice(0, 10);
+  let typed = 0;
   for (const line of lines) {
-    const a = await assumptions.create({ decision_id: dec.id, statement: line, kind: 'freeform', params: {}, status: 'holding' });
+    const parsed = parseAssumptionLine(line);
+    if (parsed.kind !== 'freeform') typed += 1;
+    const a = await assumptions.create({ decision_id: dec.id, statement: parsed.statement, kind: parsed.kind, params: parsed.params, status: 'holding' });
     await linkObjects('decision', dec.id, 'rests_on', 'assumption', a.id);
   }
   let linked = null;
@@ -94,8 +101,65 @@ export async function recordDecision(payload) {
     if (o) { await linkObjects('obligation', o.id, 'depends_on', 'decision', dec.id); linked = o.code; }
   }
   return {
-    recorded: { id: dec.id, title, assumptions: lines.length, supportsObligation: linked },
-    note: 'Recorded as a decision with free-text assumptions. To have the engine monitor an assumption, edit it in Antemortem → Decisions and give it a type (capacity, person available, dependency done by, routing).',
+    recorded: { id: dec.id, title, assumptions: lines.length, monitored: typed, supportsObligation: linked },
+    note: typed === lines.length ? 'Every assumption is typed; the engine checks them at the next analysis.' : `${lines.length - typed} assumption(s) are free text and will not be monitored until given a type in Antemortem → Decisions.`,
+  };
+}
+
+const KINDS = { capacity: ['teamRef', 'maxOpenIssues'], person_available: ['personRef', 'displayName', 'until'], dependency_done_by: ['issueKey', 'date'], routing: ['scopeJql', 'labelPrefix', 'expected'], obligation_holds: ['obligationId'], freeform: [] };
+
+/** "statement :: kind :: key=value, key=value" → { statement, kind, params }. A bare line is freeform. */
+export function parseAssumptionLine(line) {
+  const parts = line.split('::').map((s) => s.trim());
+  const statement = parts[0].slice(0, 1000);
+  const kind = KINDS[parts[1]] ? parts[1] : 'freeform';
+  const params = {};
+  if (kind !== 'freeform' && parts[2]) {
+    for (const kv of parts[2].split(',')) {
+      const [k, ...rest] = kv.split('=');
+      const key = k?.trim(); const value = rest.join('=').trim();
+      if (key && KINDS[kind].includes(key) && value) params[key] = key === 'maxOpenIssues' ? Number(value) : value;
+    }
+  }
+  return { statement, kind, params };
+}
+
+/**
+ * The text of a Confluence page plus the references the agent may use to
+ * type assumptions (people, vendors, obligations, open issues). The agent
+ * proposes; the user confirms; only then does record-decision write.
+ */
+export async function readPageForDecision(payload) {
+  const ref = String(payload?.page ?? '').trim();
+  const id = ref.match(/\/pages\/(\d+)/)?.[1] ?? ref.match(/^(\d+)$/)?.[1] ?? null;
+  if (!id) return { error: 'Give a Confluence page id or URL (…/pages/<id>/…).' };
+  let page;
+  try { page = await getPage(id); } catch (err) { return { error: `Cannot read page ${id}: ${err?.message ?? err}` }; }
+  const text = page.body.replace(/<ac:structured-macro[\s\S]*?<\/ac:structured-macro>/g, ' ').replace(/<\/(p|li|tr|h\d)>/g, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim().slice(0, 12000);
+  const siteUrl = await getSiteUrl();
+  const sourceUrl = page.webui ? `${siteUrl}/wiki${page.webui}` : null;
+
+  const obls = await obligations.list({ where: "status = 'active'", limit: 100 });
+  const people = await availability.list({ limit: 200 });
+  const personRefs = [...new Map(people.map((p) => [p.account_id, p.display_name])).entries()].map(([personRef, displayName]) => ({ personRef, displayName }));
+  let vendors = [];
+  let openIssues = [];
+  try {
+    const scopes = obls.map((o) => o.jql_scope).filter(Boolean);
+    const projects = [...new Set(scopes.map((j) => j.match(/project\s*=\s*"?([A-Z][A-Z0-9_]*)"?/i)?.[1]).filter(Boolean))];
+    if (projects.length) {
+      const issues = await searchIssues(`project in (${projects.map((p) => `"${p}"`).join(', ')}) AND statusCategory != Done ORDER BY updated DESC`, { fields: ["summary", "labels", "duedate"], maxTotal: 100, properties: [] });
+      vendors = [...new Set(issues.flatMap((i) => (i.fields?.labels ?? []).filter((l) => l.startsWith('vendor-'))))];
+      for (const i of issues) for (const l of i.fields?.labels ?? []) if (l.startsWith('tech-') && !personRefs.some((p) => p.personRef === `label:${l}`)) personRefs.push({ personRef: `label:${l}`, displayName: l.replace('tech-', '') });
+      openIssues = issues.filter((i) => i.fields?.duedate || /badge|access|contract|amendment|deliver|supply|order/i.test(i.fields?.summary ?? '')).slice(0, 25).map((i) => ({ key: i.key, summary: i.fields?.summary, due: i.fields?.duedate ?? null }));
+    }
+  } catch { /* references are a convenience; the text is the point */ }
+
+  return {
+    page: { id: page.id, title: page.title, url: sourceUrl },
+    text,
+    references: { obligations: obls.map((o) => ({ code: o.code, title: o.title, scopeJql: o.jql_scope })), people: personRefs, vendors, openIssues },
+    howToRecord: 'Propose a title, the statement, the date decided, the obligation it supports and typed assumptions, then ask the user to confirm. Only after a clear yes call record-decision with sourceUrl, decidedAt and assumptions as lines "statement :: kind :: key=value, key=value". Kinds: capacity (teamRef, maxOpenIssues), person_available (personRef, displayName, until), dependency_done_by (issueKey, date), routing (scopeJql, labelPrefix=vendor-, expected). Use only references listed here; otherwise leave the assumption freeform.',
   };
 }
 

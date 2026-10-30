@@ -64,3 +64,16 @@ test('storage rendering is well-formed and carries the banner', () => {
   assert.match(averted, /Averted on 28 November 2026/);
   assert.match(averted, /€40,000/);
 });
+
+test('typed assumption lines parse; bare lines stay freeform', async () => {
+  const { parseAssumptionLine } = await import('../src/rovo/actions.js');
+  const a = parseAssumptionLine('Boreal stays under 25 open :: capacity :: teamRef=vendor-boreal, maxOpenIssues=25');
+  assert.equal(a.kind, 'capacity');
+  assert.deepEqual(a.params, { teamRef: 'vendor-boreal', maxOpenIssues: 25 });
+  const b = parseAssumptionLine('Legal signs off in time');
+  assert.equal(b.kind, 'freeform');
+  const c = parseAssumptionLine('x :: nonsense :: a=b');
+  assert.equal(c.kind, 'freeform');
+  const d = parseAssumptionLine('Badges land :: dependency_done_by :: issueKey=NFS-87, date=2026-11-30, bogus=1');
+  assert.deepEqual(d.params, { issueKey: 'NFS-87', date: '2026-11-30' });
+});

@@ -16,7 +16,7 @@ Apps for Business Teams
 
 ## Bonus prize
 
-Best Agents — Rovo/Assignable agents (`rovo:agent` with five `action` modules, exposed to customer-built agents via `read:chat:rovo`)
+Best Agents — Rovo/Assignable agents (`rovo:agent` with six `action` modules, exposed to customer-built agents via `read:chat:rovo`)
 
 ## Inspiration
 
@@ -34,7 +34,9 @@ To do that, it adds three objects the platform does not have:
 
 An explainable engine (no language model anywhere) measures each obligation, checks each assumption against the graph, detects signals — capacity exceeded, key person unavailable, dependency slipping, decision contradicted, metric trend — builds a dated causal chain, and computes a probability and a cost whose arithmetic is printed in the document.
 
-It meets people where they work: a command center in Jira, a panel on every issue showing which obligation it feeds and which projected incident it appears in, and a Rovo agent that answers "what is my next post-mortem?" strictly from the engine's data.
+Because the engine is deterministic, it can be replayed: **what-if** recomputes the probability with any piece of evidence set aside ("if the engineer came back?"), and **history** replays the period day by day to show when the forecast crossed the line — the backtest judges would ask for. A **portfolio** view sums the exposure across contracts.
+
+It meets people where they work: a command center in Jira, a panel on every issue showing which obligation it feeds and which projected incident it appears in, a Confluence macro that puts the projected incidents on the contract page, and a Rovo agent that answers "what is my next post-mortem?" strictly from the engine's data. The agent is also the entry door: point it at steering-committee minutes and it proposes the decision and its typed assumptions; nothing is recorded until the user confirms, and the engine never sees a language model.
 
 ## How we built it
 
@@ -54,11 +56,11 @@ That the shape of the output matters as much as the model: a risk score is ignor
 
 ## What's next
 
-Teamwork Graph as the graph source (calendars for availability, decisions discovered from pages instead of recorded by hand); assumptions extracted from steering-committee minutes with the user's confirmation; a what-if mode ("if we move this delivery by two weeks, which obligations break?"); and the outbound side — publishing obligations, decisions and projected incidents into the graph for other apps to use.
+Teamwork Graph as the graph source (calendars for availability, decisions discovered from pages without being pointed at them); what-if on dates ("if we move this delivery by two weeks, which obligations break?"); a calibration ledger once real history accumulates (predicted, happened, averted); and the outbound side — publishing obligations, decisions and projected incidents into the graph for other apps to use.
 
 ## How it meets the technology requirement
 
-Built on the Forge platform: `jira:globalPage` (Custom UI), `jira:issueContext` (UI Kit), `rovo:agent` + 5 `action` modules, `trigger` (install/upgrade), `scheduledTrigger`, `webtrigger`, `consumer` (async events), `sql` (Forge SQL), KVS. Integrates with Jira (issues, projects, links, properties, transitions, JQL), Confluence (spaces, pages) and Rovo.
+Built on the Forge platform: `jira:globalPage` (Custom UI), `jira:issueContext` (UI Kit), `macro` (UI Kit, Confluence), `rovo:agent` + 6 `action` modules, `trigger` (install/upgrade), `scheduledTrigger`, `webtrigger`, `consumer` (async events), `sql` (Forge SQL), KVS. Integrates with Jira (issues, projects, links, properties, transitions, JQL), Confluence (spaces, pages) and Rovo.
 
 ## Links
 

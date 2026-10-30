@@ -44,13 +44,29 @@ modules:
         - Why is O-3 at risk?
         - How are our obligations doing?
         - What are the corrective actions right now?
+        - Record the decision from this page and what it rests on
       actions:
         - get-next-incident
         - explain-obligation
         - list-obligation-status
         - list-corrective-actions
         - record-decision
+        - read-page-for-decision
   action:
+    - key: read-page-for-decision
+      name: Read a Confluence page to propose a decision and its assumptions
+      function: rovo-read-page
+      actionVerb: GET
+      description: >
+        Reads a Confluence page (steering-committee minutes, a contract page) and returns its text
+        with the references available for typing assumptions. Use when the user points at a page
+        and wants the decision and its assumptions recorded. Propose first; record only after the user confirms.
+      inputs:
+        page:
+          title: Page
+          type: string
+          required: true
+          description: The Confluence page URL or id.
     - key: get-next-incident
       name: Get next projected incident
       function: rovo-next-incident
@@ -117,7 +133,19 @@ modules:
           title: Assumptions
           type: string
           required: false
-          description: What the decision rests on, one assumption per line.
+          description: >
+            One assumption per line. A typed line reads "statement :: kind :: key=value, key=value"
+            (kinds: capacity, person_available, dependency_done_by, routing); a bare line is free text.
+        sourceUrl:
+          title: Source URL
+          type: string
+          required: false
+          description: The Confluence page the decision comes from.
+        decidedAt:
+          title: Decided on
+          type: string
+          required: false
+          description: ISO date the decision was taken.
         obligationCode:
           title: Obligation code
           type: string
@@ -183,6 +211,8 @@ modules:
       handler: index.listCorrectiveActions
     - key: rovo-record-decision
       handler: index.recordDecision
+    - key: rovo-read-page
+      handler: index.readPageForDecision
 
 resources:
   - key: command-center
