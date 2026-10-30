@@ -58,11 +58,11 @@ export class MemoGraphSource extends GraphSource {
  * One simulated run of an obligation.
  * whatIf: { ignore: [signal fingerprints to remove], onTime: bool (open issues restored within SLA) }
  */
-export async function simulateObligation({ obligation, decisions, graph, asOf, whatIf = null, now = new Date() }) {
+export async function simulateObligation({ obligation, decisions, graph, asOf, whatIf = null, now = new Date(), actions = { inProgress: 0, done: 0 } }) {
   const past = asOf && asOf.getTime() < now.getTime() - DAY / 24;
   const g = past ? new AsOfGraphSource(graph, asOf) : graph;
   const ds = past ? decisions.filter((d) => !d.decided_at || toDate(d.decided_at) <= asOf) : decisions;
-  return analyseObligation({ obligation, decisions: ds, graph: g, now: asOf ?? now, actions: { inProgress: 0, done: 0 }, whatIf });
+  return analyseObligation({ obligation, decisions: ds, graph: g, now: asOf ?? now, actions: past ? { inProgress: 0, done: 0 } : actions, whatIf });
 }
 
 /**

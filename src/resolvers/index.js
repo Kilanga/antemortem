@@ -14,6 +14,7 @@ import { getSettings, saveSettings, ensureWebtriggerToken } from '../settings.js
 import { webTrigger } from '@forge/api';
 import { dismissIncident } from '../engine/publish.js';
 import { simulateObligation, backtest } from '../engine/simulate.js';
+import { actionsSummary } from '../engine/index.js';
 import { graphSourceFor } from '../graph/index.js';
 import { periodWindow } from '../engine/metrics.js';
 import { query, parseJson } from '../db/client.js';
@@ -280,7 +281,8 @@ resolver.define('whatIf', safe(async (req) => {
   const ignore = Array.isArray(req.payload?.ignore) ? req.payload.ignore.map((x) => str(x, 200)).slice(0, 50) : [];
   const onTime = Boolean(req.payload?.onTime);
   const graph = graphSourceFor(await getSettings());
-  const r = await simulateObligation({ obligation, decisions: ds, graph, whatIf: { ignore, onTime } });
+  const actions = await actionsSummary(obligation.id);
+  const r = await simulateObligation({ obligation, decisions: ds, graph, whatIf: { ignore, onTime }, actions });
   return { ok: true, forecast: { ...r.forecast, chain: r.chain }, metric: { kind: r.metric.kind, current: r.metric.current, projected: r.metric.projected, threshold: r.metric.threshold } };
 }));
 

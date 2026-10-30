@@ -130,7 +130,7 @@ async function resolveMissingSignals(obligation, decisions, fingerprints, now) {
 }
 
 /** Corrective actions attached to the latest incident for this obligation. */
-async function actionsSummary(obligationId) {
+export async function actionsSummary(obligationId) {
   const [fi] = await futureIncidents.list({ where: "obligation_id = ? AND status IN ('published','draft','averted')", params: [obligationId], orderBy: 'created_at DESC', limit: 1 });
   if (!fi) return { inProgress: 0, done: 0 };
   const items = await actionItems.list({ where: 'future_incident_id = ?', params: [fi.id], limit: 50 });

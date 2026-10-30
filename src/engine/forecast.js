@@ -23,7 +23,9 @@ export function computeForecast({ obligation, metric, directSignals, assumptionR
   // 2. Assumptions behind the decisions this obligation depends on
   const broken = assumptionResults.filter((r) => r.status === 'broken');
   const shaken = assumptionResults.filter((r) => r.status === 'shaken');
-  const assumptionDelta = Math.min(0.3, broken.length * 0.1 + shaken.length * 0.05);
+  // 0.075 per broken assumption: four of them reach the cap, so fixing any
+  // one of them visibly lowers the probability (what-if stays monotonic).
+  const assumptionDelta = Math.min(0.3, broken.length * 0.075 + shaken.length * 0.04);
   if (assumptionDelta) {
     p += assumptionDelta;
     explanation.push({ step: 'assumptions', label: `${broken.length} broken, ${shaken.length} shaken assumption(s) (capped at +0.30)`, delta: round(assumptionDelta) });
