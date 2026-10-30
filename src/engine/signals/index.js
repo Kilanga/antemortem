@@ -187,3 +187,30 @@ export async function checkAssumption({ assumption, decision, obligation, graph,
 }
 
 const holding = (evidence, note) => ({ status: 'holding', evidence: note ? { ...evidence, note } : evidence, signals: [] });
+
+/**
+ * person_silent — de-facto unavailability: someone holds several open
+ * in-scope issues and none of them has moved for N days. No calendar
+ * needed; the work itself says the person is not there.
+ */
+export function detectSilentAssignees({ obligation, issues, now, silentDays = 5, minHeld = 2 }) {
+  const open = issues.filter((i) => !i.resolvedAt && i.status.category !== 'done');
+  const byPerson = new Map();
+  for (const i of open) for (const p of i.people) { if (!byPerson.has(p)) byPerson.set(p, []); byPerson.get(p).push(i); }
+  const out = [];
+  for (const [person, held] of byPerson) {
+    if (held.length < minHeld) continue;
+    const idle = Math.min(...held.map((i) => (now - i.lastActivityAt) / D));
+    if (idle < silentDays) continue;
+    out.push({
+      type: 'person_silent',
+      severity: idle >= silentDays * 2 ? 4 : 3,
+      subject_type: 'obligation',
+      subject_id: obligation.id,
+      fingerprint: `person_silent:${obligation.id}:${person}`,
+      detected_at: now,
+      evidence: { code: obligation.code, personRef: person, heldIssues: held.map((i) => i.key), idleDays: Math.floor(idle), since: ymd(new Date(now.getTime() - idle * D)) },
+    });
+  }
+  return out;
+}

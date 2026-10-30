@@ -83,3 +83,11 @@ test('percent-of-invoice cost formula', () => {
   assert.equal(f.projected_cost, 40000);
   assert.match(f.explanation.cost, /2 % × 2,000,000/);
 });
+
+test('person_silent fires when someone holds idle issues, not when they are active', async () => {
+  const { detectSilentAssignees } = await import('../src/engine/signals/index.js');
+  const held = (key, idleDays) => issue({ key, people: ['label:tech-x'], lastActivityAt: new Date(now - idleDays * 24 * H) });
+  assert.equal(detectSilentAssignees({ obligation: ratioObl, issues: [held('A-1', 6), held('A-2', 9)], now }).length, 1);
+  assert.equal(detectSilentAssignees({ obligation: ratioObl, issues: [held('A-1', 6), held('A-2', 1)], now }).length, 0);
+  assert.equal(detectSilentAssignees({ obligation: ratioObl, issues: [held('A-1', 9)], now }).length, 0);
+});

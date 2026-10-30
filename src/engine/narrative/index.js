@@ -65,6 +65,10 @@ export function composeIncident({ obligation, contract, decisions, metric, signa
     const ev = bySignal.stale_critical_issue.evidence;
     factors.push(`${ev.issueKey} "${ev.summary}" has had no activity for ${ev.idleDays} days and is due ${longDate(ev.dueOn)}.`);
   }
+  if (bySignal.person_silent) {
+    const ev = bySignal.person_silent.evidence;
+    factors.push(`${personName(ev.personRef)} holds ${ev.heldIssues.length} open issues with no activity for ${ev.idleDays} days.`);
+  }
   if (bySignal.single_point_of_failure) {
     const ev = bySignal.single_point_of_failure.evidence;
     factors.push(`${personName(ev.personRef)} holds ${ev.openIssues} of the open issues (${Math.round(ev.share * 100)} %).`);
@@ -132,6 +136,9 @@ export function correctiveActions({ obligation, signals, scopeLabel }) {
       case 'obligation_trend':
         if (ev.openNearSla?.length) add(`triage:${obligation.id}`, `Triage the ${ev.openNearSla.length} interventions closest to the ${ev.slaHours} h limit`, `${ev.openNearSla.join(', ')} are near the SLA. Dispatch now; each one restored on time improves the ratio.`, ['obligation_trend']);
         break;
+      case 'person_silent':
+        add(`reach:${ev.personRef}`, `Reach ${personName(ev.personRef)} or reassign ${ev.heldIssues.join(', ')}`, `${personName(ev.personRef)} holds ${ev.heldIssues.length} open issues, none touched for ${ev.idleDays} days.`, ['person_silent']);
+        break;
       case 'stale_critical_issue':
         add(`revive:${ev.issueKey}`, `Revive ${ev.issueKey} (idle ${ev.idleDays} days, due ${ev.dueOn})`, `${ev.issueKey} "${ev.summary}" has not moved and is due soon.`, ['stale_critical_issue']);
         break;
@@ -163,6 +170,7 @@ function timelineSentence(e, obligation, metric) {
         case 'assumption_capacity_exceeded': return `${vendorName(ev.teamRef)} reaches ${ev.openIssues} open issues (assumed ceiling ${ev.maxOpenIssues}).`;
         case 'stale_critical_issue': return `${ev.issueKey} idle for ${ev.idleDays} days, due ${ev.dueOn}.`;
         case 'single_point_of_failure': return `${personName(ev.personRef)} holds ${Math.round(ev.share * 100)} % of the open work.`;
+        case 'person_silent': return `No activity from ${personName(ev.personRef)} on ${ev.heldIssues.join(', ')}.`;
         default: return e.kind;
       }
   }

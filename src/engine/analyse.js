@@ -14,7 +14,7 @@
  * Returns per-obligation results; `runAnalysis` (index.js) persists them.
  */
 import { computeMetric } from './metrics.js';
-import { detectObligationTrend, detectStaleCriticalIssues, detectSinglePointOfFailure, checkAssumption } from './signals/index.js';
+import { detectObligationTrend, detectStaleCriticalIssues, detectSinglePointOfFailure, detectSilentAssignees, checkAssumption } from './signals/index.js';
 import { computeForecast } from './forecast.js';
 
 export async function analyseObligation({ obligation, decisions, graph, now = new Date(), actions, whatIf = null }) {
@@ -27,6 +27,7 @@ export async function analyseObligation({ obligation, decisions, graph, now = ne
     ...detectObligationTrend({ obligation, metric, now }),
     ...detectStaleCriticalIssues({ obligation, issues, now }),
     ...detectSinglePointOfFailure({ obligation, issues, now }),
+    ...detectSilentAssignees({ obligation, issues, now }),
   ];
 
   let assumptionResults = [];
@@ -92,6 +93,7 @@ function signalDate(s, now) {
   switch (s.type) {
     case 'assumption_person_unavailable': return e.startsOn ?? null;
     case 'decision_contradicted': return e.divergent?.[0]?.since ?? null;
+    case 'person_silent': return e.since ?? null;
     case 'assumption_dependency_slipping': {
       const stalest = e.blockedBy?.[0];
       if (stalest?.idleDays != null) return ymd(new Date(now.getTime() - stalest.idleDays * 86400_000));

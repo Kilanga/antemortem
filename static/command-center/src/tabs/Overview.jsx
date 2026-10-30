@@ -120,6 +120,7 @@ const SIGNAL_LABEL = {
   decision_contradicted: 'Decision contradicted',
   stale_critical_issue: 'Stale critical issue',
   single_point_of_failure: 'Single point of failure',
+  person_silent: 'Assignee silent',
   detector_error: 'Detector error',
 };
 
@@ -265,6 +266,7 @@ function chainText(e) {
         case 'decision_contradicted': return `${ev.divergent?.[0]?.key} routes work to ${ev.divergent?.[0]?.label}, contrary to the decision`;
         case 'stale_critical_issue': return `${ev.issueKey} idle for ${ev.idleDays} days, due ${fmtDate(ev.dueOn)}`;
         case 'single_point_of_failure': return `${ev.personRef} holds ${ev.openIssues} of the open issues (${Math.round(ev.share * 100)} %)`;
+        case 'person_silent': return `${ev.personRef}: no activity for ${ev.idleDays} days on ${ev.heldIssues.length} held issues`;
         default: return e.kind;
       }
   }
