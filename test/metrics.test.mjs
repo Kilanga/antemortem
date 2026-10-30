@@ -41,7 +41,7 @@ test('a resolved issue past the SLA counts as a breach; an open one past the SLA
   assert.deepEqual(m.detail.openPastSla, ['X-3']);
   assert.equal(m.detail.openLikelyOk, 0);
   assert.equal(m.holds, false);
-  const [sig] = detectObligationTrend({ obligation: ratioObl, metric: m, now });
+  const [sig] = detectObligationTrend({ obligation: ratioObl, metric: m, now, minSample: 1 });
   assert.equal(sig.type, 'obligation_trend');
   assert.ok(sig.severity >= 4);
 });

@@ -13,6 +13,9 @@ import { getSchemaStatus, runMigrations } from '../db/migrate.js';
 import { getSettings, saveSettings, ensureWebtriggerToken } from '../settings.js';
 import { webTrigger } from '@forge/api';
 import { dismissIncident } from '../engine/publish.js';
+import { simulateObligation, backtest } from '../engine/simulate.js';
+import { graphSourceFor } from '../graph/index.js';
+import { periodWindow } from '../engine/metrics.js';
 import { query, parseJson } from '../db/client.js';
 import { currentUserHasPermission, searchIssues } from '../jira/client.js';
 import {
@@ -258,6 +261,39 @@ resolver.define('listForecasts', safe(async () => {
     return { obligation: o, forecast: f, signals };
   });
   return { ok: true, forecasts: out };
+}));
+
+// ---------------------------------------------------------------------------
+// Simulation (read-only): what-if and backtest
+// ---------------------------------------------------------------------------
+async function modelFor(obligationId) {
+  const obligation = await obligations.get(obligationId);
+  if (!obligation) throw new Error('obligation not found');
+  const links = await query("SELECT to_id FROM link WHERE archived_at IS NULL AND from_type = 'obligation' AND from_id = ? AND relation = 'depends_on' AND to_type = 'decision'", [obligationId]);
+  const ids = links.map((l) => l.to_id);
+  const all = ids.length ? await listDecisionsWithAssumptions({ where: "status IN ('active','contradicted')", limit: 500 }) : [];
+  return { obligation, decisions: all.filter((d) => ids.includes(d.id)) };
+}
+
+resolver.define('whatIf', safe(async (req) => {
+  const { obligation, decisions: ds } = await modelFor(str(req.payload?.obligationId, 36));
+  const ignore = Array.isArray(req.payload?.ignore) ? req.payload.ignore.map((x) => str(x, 200)).slice(0, 50) : [];
+  const onTime = Boolean(req.payload?.onTime);
+  const graph = graphSourceFor(await getSettings());
+  const r = await simulateObligation({ obligation, decisions: ds, graph, whatIf: { ignore, onTime } });
+  return { ok: true, forecast: { ...r.forecast, chain: r.chain }, metric: { kind: r.metric.kind, current: r.metric.current, projected: r.metric.projected, threshold: r.metric.threshold } };
+}));
+
+resolver.define('backtest', safe(async (req) => {
+  const { obligation, decisions: ds } = await modelFor(str(req.payload?.obligationId, 36));
+  const settings = await getSettings();
+  const graph = graphSourceFor(settings);
+  const now = new Date();
+  const win = periodWindow(obligation, now);
+  const days = Math.min(60, Math.max(7, Math.ceil((now - win.start) / 86400_000)));
+  const stepDays = days > 30 ? 5 : days > 14 ? 3 : 2;
+  const b = await backtest({ obligation, decisions: ds, graph, now, days, stepDays, threshold: Number(settings.publishThreshold ?? 0.6) });
+  return { ok: true, ...b, periodStart: win.start.toISOString().slice(0, 10) };
 }));
 
 // ---------------------------------------------------------------------------

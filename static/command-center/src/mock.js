@@ -15,10 +15,10 @@ const obligations = [
 
 const chain = [
   { at: d(-70), role: 'root', kind: 'decision', title: 'D-7 · Lot 3 stays with Boreal Interventions (Sept. steering committee)' },
-  { at: d(-9), role: 'event', kind: 'assumption_dependency_slipping', evidence: { issueKey: 'NFS-87', summary: 'Site access badges — Northern zone, batch 3', deadline: d(2), blockedBy: [{ key: 'NFS-88', summary: 'Badge supplier contract amendment (Varlock Access)', idleDays: 9 }] } },
-  { at: d(-3), role: 'event', kind: 'assumption_person_unavailable', evidence: { displayName: 'Karim Benali', kind: 'reassigned', startsOn: d(-3), endsOn: d(30), note: 'Reassigned to the lot 1 ramp-up (Western zone) by ops planning', heldIssues: ['NFS-44', 'NFS-45', 'NFS-46', 'NFS-47'] } },
-  { at: d(-1), role: 'event', kind: 'decision_contradicted', evidence: { divergent: [{ key: 'NFS-89', summary: 'Reassign 4 Northern-zone interventions to Helios Services', label: 'vendor-helios' }], decision: 'D-7 · Lot 3 stays with Boreal Interventions (Sept. steering committee)' } },
-  { at: d(0), role: 'event', kind: 'assumption_capacity_exceeded', evidence: { teamRef: 'vendor-boreal', openIssues: 31, maxOpenIssues: 25 } },
+  { at: d(-9), role: 'event', kind: 'assumption_dependency_slipping', signalFingerprint: 'assumption_dependency_slipping:mock', evidence: { issueKey: 'NFS-87', summary: 'Site access badges — Northern zone, batch 3', deadline: d(2), blockedBy: [{ key: 'NFS-88', summary: 'Badge supplier contract amendment (Varlock Access)', idleDays: 9 }] } },
+  { at: d(-3), role: 'event', kind: 'assumption_person_unavailable', signalFingerprint: 'assumption_person_unavailable:mock', evidence: { displayName: 'Karim Benali', kind: 'reassigned', startsOn: d(-3), endsOn: d(30), note: 'Reassigned to the lot 1 ramp-up (Western zone) by ops planning', heldIssues: ['NFS-44', 'NFS-45', 'NFS-46', 'NFS-47'] } },
+  { at: d(-1), role: 'event', kind: 'decision_contradicted', signalFingerprint: 'decision_contradicted:mock', evidence: { divergent: [{ key: 'NFS-89', summary: 'Reassign 4 Northern-zone interventions to Helios Services', label: 'vendor-helios' }], decision: 'D-7 · Lot 3 stays with Boreal Interventions (Sept. steering committee)' } },
+  { at: d(0), role: 'event', kind: 'assumption_capacity_exceeded', signalFingerprint: 'assumption_capacity_exceeded:mock', evidence: { teamRef: 'vendor-boreal', openIssues: 31, maxOpenIssues: 25 } },
   { at: d(0), role: 'measurement', kind: 'obligation_trend', evidence: { code: 'O-3', current: 0.93, projected: 0.833, within: 40, resolved: 43, open: 11, openNearSla: ['NFS-44', 'NFS-45', 'NFS-46', 'NFS-47', 'NFS-48', 'NFS-49'] } },
   { at: d(16), role: 'projection', kind: 'breach', obligationCode: 'O-3', probability: 0.8, cost: 40000, currency: 'EUR', metric: { projected: 0.833, threshold: 0.95 } },
 ];
@@ -88,5 +88,17 @@ const responses = {
   getWebtrigger: { ok: true, example: 'curl -X POST -H "X-Antemortem-Token: …" https://…/x/antemortem-run-analysis' },
 };
 
+const backtestPoints = [0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.6, 0.8].map((p, i) => ({ at: d(-14 + i * 2), daysBefore: 14 - i * 2, probability: p, cost: p ? 40000 : 0, healthy: p === 0, signals: [] }));
+responses.backtest = { ok: true, points: backtestPoints, threshold: 0.6, firstAbove: d(-2), leadDays: 18, periodStart: d(-14) };
+
 export const isMock = () => { try { return new URLSearchParams(window.location.search).get('mock') === '1'; } catch { return false; } };
-export const mockInvoke = async (name) => { await new Promise((r) => setTimeout(r, 120)); return responses[name] ?? { ok: false, error: `mock: no fixture for ${name}` }; };
+export const mockInvoke = async (name, payload) => {
+  await new Promise((r) => setTimeout(r, 120));
+  if (name === 'whatIf') {
+    const n = (payload?.ignore ?? []).length;
+    const p = Math.max(0.05, Math.round((0.8 - n * 0.1 - (payload?.onTime ? 0.2 : 0)) * 100) / 100);
+    const projected = payload?.onTime ? 0.944 : 0.833;
+    return { ok: true, forecast: { probability: p, projected_cost: projected >= 0.95 ? 0 : 40000, currency: 'EUR', projected_breach_date: d(16), healthy: p <= 0.05 }, metric: { kind: 'ratio_within_sla', current: 0.93, projected, threshold: 0.95 } };
+  }
+  return responses[name] ?? { ok: false, error: `mock: no fixture for ${name}` };
+};

@@ -134,6 +134,15 @@ h1 { font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 
 .timeline li.root .tl-text { font-weight: 600; }
 .tl-date { color: var(--muted); font-size: 12px; }
 .explain { margin-top: 10px; font-family: var(--mono); }
+.whatif { margin: 0 8px 0 0; vertical-align: -1px; accent-color: var(--accent); }
+.timeline li.fixed .tl-text { text-decoration: line-through; color: var(--muted); }
+.whatif-result { margin: 10px 0 0; font-family: var(--serif); font-size: 15px; }
+.history { border-top: 1px dashed var(--line); margin-top: 8px; padding-top: 8px; }
+.hist-line { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.hist-thr { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.hist-dot { fill: #fff; stroke: var(--accent); stroke-width: 1.2; }
+.hist-dot.above { fill: var(--accent); }
+.hist-legend { display: flex; justify-content: space-between; gap: 12px; margin-top: 2px; }
 
 /* ---- cards (health, settings, editors) ------------------------------------ */
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }

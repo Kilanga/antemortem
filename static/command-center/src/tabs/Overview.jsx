@@ -126,6 +126,22 @@ const SIGNAL_LABEL = {
 function ForecastRow({ item }) {
   const { obligation: o, forecast: f, signals } = item;
   const [open, setOpen] = useState(false);
+  const [ignore, setIgnore] = useState([]);
+  const [onTime, setOnTime] = useState(false);
+  const [sim, setSim] = useState(null);
+  const [history, setHistory] = useState(null);
+  const toggle = async (fp) => {
+    const next = ignore.includes(fp) ? ignore.filter((x) => x !== fp) : [...ignore, fp];
+    setIgnore(next);
+    await recompute(next, onTime);
+  };
+  const toggleOnTime = async () => { const v = !onTime; setOnTime(v); await recompute(ignore, v); };
+  const recompute = async (ig, ot) => {
+    if (!ig.length && !ot) { setSim(null); return; }
+    setSim({ loading: true });
+    setSim(await api.whatIf(o.id, ig, ot));
+  };
+  const loadHistory = async () => { setHistory({ loading: true }); setHistory(await api.backtest(o.id)); };
   const healthy = !f || f.healthy;
   const pct = f ? Math.round(f.probability * 100) : null;
   const m = f?.explanation?.metric;
@@ -151,18 +167,35 @@ function ForecastRow({ item }) {
         <div className="row-side">
           {!healthy && <div className="penalty">{fmtMoney(f.projected_cost, f.currency)}</div>}
           {f && !healthy && <button className="linklike" onClick={() => setOpen(!open)}>{open ? 'Hide chain' : 'Show chain'}</button>}
+          {f && !healthy && <button className="linklike" onClick={() => (history ? setHistory(null) : loadHistory())}>{history ? 'Hide history' : 'History'}</button>}
         </div>
       </div>
+      {history && <History data={history} />}
       {open && f && (
         <div className="chain">
           <ol className="timeline">
-            {(f.chain ?? []).map((e, i) => (
-              <li key={i} className={e.role}>
-                <span className="tl-date">{fmtDate(e.at)}</span>
-                <span className="tl-text">{chainText(e)}</span>
+            {(f.chain ?? []).map((e, i) => {
+              const fp = e.signalFingerprint;
+              const fixable = e.role === 'event' && fp;
+              const fixed = fp && ignore.includes(fp);
+              return (
+                <li key={i} className={`${e.role} ${fixed ? 'fixed' : ''}`}>
+                  <span className="tl-date">{fmtDate(e.at)}</span>
+                  <span className="tl-text">
+                    {fixable && <input type="checkbox" className="whatif" checked={fixed} onChange={() => toggle(fp)} title="What if this were fixed?" />}
+                    {chainText(e)}
+                  </span>
+                </li>
+              );
+            })}
+            {m && m.kind === 'ratio_within_sla' && (
+              <li className="measurement">
+                <span className="tl-date" />
+                <span className="tl-text"><input type="checkbox" className="whatif" checked={onTime} onChange={toggleOnTime} />every open issue restored within the SLA</span>
               </li>
-            ))}
+            )}
           </ol>
+          {sim && <WhatIf base={f} sim={sim} />}
           <div className="explain muted small">
             {f.explanation?.steps?.map((s, i) => <span key={i}>{s.delta > 0 ? '+' : ''}{s.delta} {s.label.toLowerCase()}{i < f.explanation.steps.length - 1 ? ' · ' : ''}</span>)}
             {' = '}{f.probability} · {f.explanation?.cost}
@@ -170,6 +203,51 @@ function ForecastRow({ item }) {
         </div>
       )}
     </article>
+  );
+}
+
+function WhatIf({ base, sim }) {
+  if (sim.loading) return <p className="whatif-result muted small">Recomputing…</p>;
+  if (!sim.ok) return <p className="whatif-result warn small">{sim.error}</p>;
+  const p = Math.round(sim.forecast.probability * 100);
+  const d = p - Math.round(base.probability * 100);
+  const m = sim.metric;
+  return (
+    <p className="whatif-result">
+      If so: <strong>{p} %</strong> ({d > 0 ? '+' : ''}{d} pts)
+      {m?.kind === 'ratio_within_sla' && <>, projected {Math.round(m.projected * 100)} % against {Math.round(m.threshold * 100)} %</>}
+      {sim.forecast.healthy || sim.forecast.probability <= 0.05 ? ' — no incident.' : `, ${fmtMoney(sim.forecast.projected_cost, sim.forecast.currency)}.`}
+    </p>
+  );
+}
+
+function History({ data }) {
+  if (data.loading) return <p className="history muted small">Replaying the period…</p>;
+  if (!data.ok) return <p className="history warn small">{data.error}</p>;
+  const pts = data.points ?? [];
+  if (!pts.length) return null;
+  const W = 420; const H = 56; const pad = 4;
+  const x = (i) => pad + (i / Math.max(1, pts.length - 1)) * (W - 2 * pad);
+  const y = (p) => H - pad - p * (H - 2 * pad);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.probability).toFixed(1)}`).join(' ');
+  const thr = y(data.threshold);
+  return (
+    <div className="history">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" aria-label="Probability over the period">
+        <line x1={pad} x2={W - pad} y1={thr} y2={thr} className="hist-thr" />
+        <path d={line} className="hist-line" />
+        {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.probability)} r="2.5" className={p.probability >= data.threshold ? 'hist-dot above' : 'hist-dot'} />)}
+      </svg>
+      <div className="hist-legend muted small">
+        <span>{fmtDate(pts[0].at)}</span>
+        <span>
+          {data.firstAbove
+            ? <>Would have been published on <strong>{fmtDate(data.firstAbove)}</strong>{data.leadDays != null ? `, ${data.leadDays} days before the breach` : ''}</>
+            : 'Never crossed the publish threshold'}
+        </span>
+        <span>{fmtDate(pts[pts.length - 1].at)}</span>
+      </div>
+    </div>
   );
 }
 

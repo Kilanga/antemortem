@@ -33,6 +33,9 @@ export const api = {
   resetDemo: () => call('resetDemo'),
   getDemoProgress: () => call('getDemoProgress'),
 
+  whatIf: (obligationId, ignore, onTime) => call('whatIf', { obligationId, ignore, onTime }),
+  backtest: (obligationId) => call('backtest', { obligationId }),
+
   listContracts: () => call('listContracts'),
   saveContract: (c) => call('saveContract', c),
   listObligations: () => call('listObligations'),
