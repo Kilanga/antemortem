@@ -37,6 +37,18 @@ export async function getSpaceByKey(key) {
   return s ? { id: String(s.id), key: s.key, name: s.name, homepageId: s.homepageId ? String(s.homepageId) : null } : null;
 }
 
+/** Pages of a space with an exact title (v2). */
+export async function findPagesByTitle(spaceId, title) {
+  const res = await call('GET', route`/wiki/api/v2/spaces/${spaceId}/pages?title=${title}&limit=5`);
+  return (res?.results ?? []).map((p) => ({ id: String(p.id), title: p.title }));
+}
+
+/** Direct child pages of a page (v2). */
+export async function listChildPages(pageId) {
+  const res = await call('GET', route`/wiki/api/v2/pages/${pageId}/children?limit=50`);
+  return (res?.results ?? []).map((p) => ({ id: String(p.id), title: p.title }));
+}
+
 export async function createSpace({ key, name, description }) {
   await call('POST', route`/wiki/rest/api/space`, {
     key,

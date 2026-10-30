@@ -311,23 +311,37 @@ resolver.define('listIncidents', safe(async () => {
   return { ok: true, open: open.map(decorate), averted: averted.map(decorate), costAvoided: averted.filter((f) => f.status === 'averted').reduce((n, f) => n + Number(f.cost_avoided ?? 0), 0) };
 }));
 
-/** One block for the Confluence macro: open incidents and at-risk obligations. */
-resolver.define('getMacroSummary', safe(async () => {
-  const open = await futureIncidents.list({ where: "status IN ('draft','published')", orderBy: 'incident_date ASC', limit: 20 });
-  const rows = await query('SELECT * FROM forecast WHERE superseded_by IS NULL AND archived_at IS NULL ORDER BY computed_at DESC LIMIT 500');
-  const obls = await obligations.list({ where: "status = 'active'", limit: 500 });
-  const latest = new Map();
-  for (const r of rows) if (!latest.has(r.obligation_id)) latest.set(r.obligation_id, hydrate('forecast', r));
-  const atRisk = obls.map((o) => ({ o, f: latest.get(o.id) })).filter(({ f }) => f && Number(f.probability) > 0.05 && f.explanation?.steps?.length)
-    .map(({ o, f }) => ({ id: o.id, code: o.code, title: o.title, probability: Number(f.probability), cost: Number(f.projected_cost ?? 0), currency: f.currency }))
-    .sort((a, b) => b.probability - a.probability);
-  const incidents = open.map((fi) => {
-    const a = fi.actions ?? {};
-    const f = latest.get(fi.obligation_id);
-    return { id: fi.id, obligationId: fi.obligation_id, title: fi.title, incidentDate: String(fi.incident_date).slice(0, 10), probability: Number(f?.probability ?? a.probability ?? 0), cost: Number(f?.projected_cost ?? a.cost ?? 0), currency: a.currency ?? f?.currency ?? 'EUR', url: fi.confluence_page_url ?? null };
-  });
-  const totalCost = incidents.reduce((n, fi) => n + fi.cost, 0);
-  return { ok: true, incidents, atRisk, totalCost, currency: incidents[0]?.currency ?? atRisk[0]?.currency ?? 'EUR', commandCenterUrl: null };
+/**
+ * One block for the Confluence macro. Forge SQL is provisioned per
+ * installation, so the Confluence side cannot read the Jira side's tables:
+ * the macro reads the published pages themselves, which are the record.
+ */
+resolver.define('getMacroSummary', safe(async (req) => {
+  const { getSpaceByKey, findPagesByTitle, listChildPages, getPage } = await import('../confluence/client.js');
+  const spaceKey = str(req.payload?.spaceKey ?? req.context?.extension?.space?.key ?? '', 64);
+  if (!spaceKey) return { ok: false, error: 'no space in context' };
+  const space = await getSpaceByKey(spaceKey);
+  if (!space) return { ok: false, error: `space ${spaceKey} not found` };
+  const { getSiteUrl } = await import('../engine/publish.js');
+  const site = await getSiteUrl();
+  const read = async (parentTitle) => {
+    const [parent] = await findPagesByTitle(space.id, parentTitle);
+    if (!parent) return [];
+    const children = await listChildPages(parent.id);
+    const out = [];
+    for (const c of children.slice(0, 20)) {
+      const page = await getPage(c.id);
+      const text = page.body.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+      const probability = Number(text.match(/probability (\d+) %/)?.[1] ?? 0) / 100;
+      const cost = text.match(/penalty ([^.]*?)(?:\.| Every)/)?.[1]?.trim() ?? text.match(/cost avoided: ([^.]*?)\./)?.[1]?.trim() ?? '';
+      const incidentDate = c.title.match(/(\d{4}-\d{2}-\d{2})/)?.[1] ?? '';
+      const averted = /Averted on ([^.]+)\./.exec(text)?.[1] ?? null;
+      out.push({ id: c.id, title: c.title, incidentDate, probability, costText: cost, averted, url: page.webui ? `${site}/wiki${page.webui}` : null });
+    }
+    return out.sort((a, b) => a.incidentDate.localeCompare(b.incidentDate));
+  };
+  const [projected, averted] = await Promise.all([read('Projected incidents'), read('Averted incidents')]);
+  return { ok: true, spaceKey, projected, averted };
 }));
 
 resolver.define('dismissIncident', admin(async (req) => {
