@@ -14,6 +14,10 @@ Target **3:00**; hard stop 4:30. Judges are not required to watch beyond three m
   6. Rovo chat with the Antemortem agent selected
 - Cursor visible, slow movements, 1 s pause before each click.
 
+## Timing
+
+Load the demo and record within the hour. The open interventions are created "a few hours old" relative to the load time; after an hour or two they age past the 4 h limit, the figures drift (fewer "near the limit", lower projection) and the narrative no longer matches the voice-over. If in doubt: Reset demo, Load demo, Run analysis, record.
+
 ## Shot list
 
 | Time | Screen | Voice-over |

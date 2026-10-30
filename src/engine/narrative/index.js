@@ -59,7 +59,8 @@ export function composeIncident({ obligation, contract, decisions, metric, signa
   // --- Contributing factors: only what the root cause does not already say --
   const factors = [];
   if (trend.openNearSla?.length) {
-    factors.push(`${trend.openNearSla.length} interventions are within an hour of the ${trend.slaHours} h limit (${trend.openNearSla.join(', ')}). ${trend.neededOnTimeToRecover} consecutive on-time restorations would be needed to get back above ${pctOf(metric.threshold)}.`);
+    const n = trend.openNearSla.length;
+    factors.push(`${n} intervention${n === 1 ? ' is' : 's are'} within an hour of the ${trend.slaHours} h limit (${trend.openNearSla.join(', ')}). ${trend.neededOnTimeToRecover} consecutive on-time restorations would be needed to get back above ${pctOf(metric.threshold)}.`);
   }
   if (bySignal.stale_critical_issue) {
     const ev = bySignal.stale_critical_issue.evidence;

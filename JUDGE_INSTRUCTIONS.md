@@ -29,6 +29,8 @@ Everything below runs on a **fresh Atlassian Cloud site with no data**. The app 
 
 ## 3. Run the analysis (1 minute)
 
+The demo data is relative to the moment it was loaded; figures below are what you see within the first hour. Later, the open interventions have aged and the numbers drift (still coherent, just different).
+
 1. Back on **Overview**, click **Run analysis now**. The analysis runs in the background (10–40 s); the page refreshes when it is done.
 2. You should see **"Next post-mortem in 16 days."** — obligation **O-3** (*Restoration ≤ 4 h on 95 % of lot 3 interventions*) at **~80 % probability, €40,000**, and at the top a card titled *Incident <date> — Meridian Telecom, O-3 breach*.
 3. Click **Show chain** on O-3: a dated causal chain from the September steering-committee decision to the projected breach, and the arithmetic of the probability.
