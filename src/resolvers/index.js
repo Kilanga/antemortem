@@ -309,6 +309,27 @@ resolver.define('listIncidents', safe(async () => {
   return { ok: true, open: open.map(decorate), averted: averted.map(decorate), costAvoided: averted.filter((f) => f.status === 'averted').reduce((n, f) => n + Number(f.cost_avoided ?? 0), 0) };
 }));
 
+/** One block for the Confluence macro: open incidents and at-risk obligations. */
+resolver.define('getMacroSummary', safe(async () => {
+  const open = await futureIncidents.list({ where: "status IN ('draft','published')", orderBy: 'incident_date ASC', limit: 20 });
+  const rows = await query('SELECT * FROM forecast WHERE superseded_by IS NULL AND archived_at IS NULL ORDER BY computed_at DESC LIMIT 500');
+  const obls = await obligations.list({ where: "status = 'active'", limit: 500 });
+  const latest = new Map();
+  for (const r of rows) if (!latest.has(r.obligation_id)) latest.set(r.obligation_id, hydrate('forecast', r));
+  const atRisk = obls.map((o) => ({ o, f: latest.get(o.id) })).filter(({ f }) => f && Number(f.probability) > 0.05 && f.explanation?.steps?.length)
+    .map(({ o, f }) => ({ id: o.id, code: o.code, title: o.title, probability: Number(f.probability), cost: Number(f.projected_cost ?? 0), currency: f.currency }))
+    .sort((a, b) => b.probability - a.probability);
+  const incidents = open.map((fi) => {
+    const a = fi.actions ?? {};
+    const f = latest.get(fi.obligation_id);
+    return { id: fi.id, obligationId: fi.obligation_id, title: fi.title, incidentDate: String(fi.incident_date).slice(0, 10), probability: Number(f?.probability ?? a.probability ?? 0), cost: Number(f?.projected_cost ?? a.cost ?? 0), currency: a.currency ?? f?.currency ?? 'EUR', url: fi.confluence_page_url ?? null };
+  });
+  const totalCost = incidents.reduce((n, fi) => n + fi.cost, 0);
+  let commandCenterUrl = null;
+  try { const { getSiteUrl } = await import('../engine/publish.js'); const site = await getSiteUrl(); if (site) commandCenterUrl = `${site}/jira/apps`; } catch { /* optional */ }
+  return { ok: true, incidents, atRisk, totalCost, currency: incidents[0]?.currency ?? atRisk[0]?.currency ?? 'EUR', commandCenterUrl };
+}));
+
 resolver.define('dismissIncident', admin(async (req) => {
   const id = str(req.payload?.id, 36);
   const reason = str(req.payload?.reason, 1000);

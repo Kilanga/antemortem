@@ -12,6 +12,15 @@ modules:
 
   # On every issue: which obligations it feeds, which assumptions mention it,
   # whether it appears in a projected post-mortem.
+  macro:
+    - key: antemortem-macro
+      resource: macro
+      resolver:
+        function: resolver
+      render: native
+      title: Antemortem — projected incidents
+      description: The post-mortems Antemortem has written for incidents that have not happened yet.
+      layout: block
   jira:issueContext:
     - key: antemortem-issue-context
       resource: issue-context
@@ -180,6 +189,8 @@ resources:
     path: static/command-center/dist
   - key: issue-context
     path: src/frontend/issue-context.jsx
+  - key: macro
+    path: src/frontend/macro.jsx
   - key: agent-resource
     path: resource/agent
 
