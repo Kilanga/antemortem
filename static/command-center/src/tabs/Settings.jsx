@@ -11,6 +11,10 @@ export default function Settings({ overview, notify, onChanged }) {
     graphSource: settings.graphSource,
   });
   const [busy, setBusy] = useState(false);
+  // Settings can change under the form (the demo loader points the app at NFS / ANTE).
+  useEffect(() => {
+    setForm({ confluenceSpaceKey: settings.confluenceSpaceKey ?? '', actionsProjectKey: settings.actionsProjectKey ?? '', publishThreshold: settings.publishThreshold, graphSource: settings.graphSource });
+  }, [settings.confluenceSpaceKey, settings.actionsProjectKey, settings.publishThreshold, settings.graphSource]);
   const [progress, setProgress] = useState(overview.demo ?? { status: 'idle', steps: [] });
   const timer = useRef(null);
 
