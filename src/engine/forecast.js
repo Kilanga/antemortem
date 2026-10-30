@@ -8,7 +8,7 @@
  */
 const SEVERITY_WEIGHT = 0.5; // severity/5 × this = base contribution of the strongest direct signal
 
-export function computeForecast({ obligation, metric, directSignals, assumptionResults, contradictions, actions = { open: 0, doneSinceLast: 0 }, now = new Date() }) {
+export function computeForecast({ obligation, metric, directSignals, assumptionResults, contradictions, actions = { inProgress: 0, done: 0 }, now = new Date() }) {
   const explanation = [];
   let p = 0;
 
@@ -35,16 +35,18 @@ export function computeForecast({ obligation, metric, directSignals, assumptionR
     explanation.push({ step: 'contradiction', label: `${contradictions.length} decision(s) contradicted by recent work`, delta: 0.1 });
   }
 
-  // 4. Corrective actions already in flight or completed
-  if (actions.open) {
-    const d = -0.1 * actions.open;
+  // 4. Corrective actions — only work that actually moved counts. An action
+  // that merely exists changes nothing (otherwise publishing an incident
+  // would avert it by itself on the next run).
+  if (actions.inProgress) {
+    const d = Math.max(-0.1, -0.05 * actions.inProgress);
     p += d;
-    explanation.push({ step: 'actions_open', label: `${actions.open} corrective action(s) in progress`, delta: round(d) });
+    explanation.push({ step: 'actions_in_progress', label: `${actions.inProgress} corrective action(s) in progress`, delta: round(d) });
   }
-  if (actions.doneSinceLast) {
-    const d = -0.2 * actions.doneSinceLast;
+  if (actions.done) {
+    const d = Math.max(-0.45, -0.15 * actions.done);
     p += d;
-    explanation.push({ step: 'actions_done', label: `${actions.doneSinceLast} corrective action(s) completed since last analysis`, delta: round(d) });
+    explanation.push({ step: 'actions_done', label: `${actions.done} corrective action(s) completed`, delta: round(d) });
   }
 
   const probability = Math.min(0.98, Math.max(0.05, round(p)));

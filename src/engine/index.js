@@ -132,7 +132,7 @@ async function resolveMissingSignals(obligation, decisions, fingerprints, now) {
 /** Corrective actions attached to the latest incident for this obligation. */
 async function actionsSummary(obligationId) {
   const [fi] = await futureIncidents.list({ where: "obligation_id = ? AND status IN ('published','draft','averted')", params: [obligationId], orderBy: 'created_at DESC', limit: 1 });
-  if (!fi) return { open: 0, doneSinceLast: 0 };
+  if (!fi) return { inProgress: 0, done: 0 };
   const items = await actionItems.list({ where: 'future_incident_id = ?', params: [fi.id], limit: 50 });
-  return { open: items.filter((a) => a.status === 'open' || a.status === 'in_progress').length, doneSinceLast: items.filter((a) => a.status === 'done').length };
+  return { inProgress: items.filter((a) => a.status === 'in_progress').length, done: items.filter((a) => a.status === 'done').length };
 }

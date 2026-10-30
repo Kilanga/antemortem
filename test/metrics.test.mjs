@@ -70,9 +70,9 @@ test('forecast is bounded and credits corrective actions', () => {
   const broken = Array.from({ length: 6 }, () => ({ status: 'broken' }));
   const high = computeForecast({ obligation: ratioObl, metric: m, directSignals: sig, assumptionResults: broken, contradictions: [{}], now });
   assert.equal(high.probability, 0.9); // 0.5 + 0.3 (capped) + 0.1
-  const withActions = computeForecast({ obligation: ratioObl, metric: m, directSignals: sig, assumptionResults: broken, contradictions: [{}], actions: { open: 1, doneSinceLast: 2 }, now });
-  assert.equal(withActions.probability, 0.4);
-  const floor = computeForecast({ obligation: ratioObl, metric: m, directSignals: sig, assumptionResults: [], contradictions: [], actions: { open: 0, doneSinceLast: 5 }, now });
+  const withActions = computeForecast({ obligation: ratioObl, metric: m, directSignals: sig, assumptionResults: broken, contradictions: [{}], actions: { inProgress: 1, done: 2 }, now });
+  assert.equal(withActions.probability, 0.55); // 0.9 − 0.05 − 0.30
+  const floor = computeForecast({ obligation: ratioObl, metric: m, directSignals: sig, assumptionResults: [], contradictions: [], actions: { inProgress: 0, done: 5 }, now });
   assert.equal(floor.probability, 0.05);
   assert.equal(floor.healthy, false, 'a signal is still present, so not healthy even at the floor');
 });
@@ -90,4 +90,15 @@ test('person_silent fires when someone holds idle issues, not when they are acti
   assert.equal(detectSilentAssignees({ obligation: ratioObl, issues: [held('A-1', 6), held('A-2', 9)], now }).length, 1);
   assert.equal(detectSilentAssignees({ obligation: ratioObl, issues: [held('A-1', 6), held('A-2', 1)], now }).length, 0);
   assert.equal(detectSilentAssignees({ obligation: ratioObl, issues: [held('A-1', 9)], now }).length, 0);
+});
+
+test('corrective actions that merely exist do not lower the forecast; two done bring it under the threshold', () => {
+  const m = computeMetric(ratioObl, [issue({ key: 'A', startedAt: new Date(now - 10 * H), resolvedAt: new Date(now - 4 * H) }), ...Array.from({ length: 12 }, (_, i) => issue({ key: `B${i}`, startedAt: new Date(now - 6 * H), resolvedAt: new Date(now - 5 * H) }))], now);
+  const sig = detectObligationTrend({ obligation: ratioObl, metric: m, now });
+  const broken = [{ status: 'broken' }, { status: 'broken' }, { status: 'broken' }, { status: 'broken' }];
+  const base = computeForecast({ obligation: ratioObl, metric: m, directSignals: sig, assumptionResults: broken, contradictions: [{}], actions: { inProgress: 0, done: 0 }, now });
+  const untouched = computeForecast({ obligation: ratioObl, metric: m, directSignals: sig, assumptionResults: broken, contradictions: [{}], actions: { inProgress: 0, done: 0 }, now });
+  assert.equal(untouched.probability, base.probability);
+  const twoDone = computeForecast({ obligation: ratioObl, metric: m, directSignals: sig, assumptionResults: broken, contradictions: [{}], actions: { inProgress: 0, done: 2 }, now });
+  assert.ok(twoDone.probability <= base.probability - 0.3, `${twoDone.probability} vs ${base.probability}`);
 });

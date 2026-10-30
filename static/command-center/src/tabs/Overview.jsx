@@ -21,8 +21,11 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
 
   const configured = Boolean(settings.confluenceSpaceKey && settings.actionsProjectKey);
   const modelObjects = (counts.obligation ?? 0) + (counts.decision ?? 0);
+  const threshold = Number(settings.publishThreshold ?? 0.6);
+  const analysed = (forecasts ?? []).some((f) => f.forecast);
   const atRisk = (forecasts ?? []).filter((f) => f.forecast && !f.forecast.healthy && f.forecast.probability >= 0.3).sort((a, b) => b.forecast.probability - a.forecast.probability);
   const next = atRisk[0] ?? null;
+  const due = next && next.forecast.probability >= threshold; // a post-mortem is (or will be) written
   const daysTo = next ? Math.ceil((new Date(next.forecast.projected_breach_date) - Date.now()) / 86400_000) : null;
   const totalAtRisk = atRisk.reduce((n, f) => n + (f.forecast.projected_cost ?? 0), 0);
 
@@ -31,20 +34,22 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
       <section className="hero">
         <div>
           <p className={`dateline ${next ? 'risk' : ''}`}>
-            {next ? `Projected for ${new Date(next.forecast.projected_breach_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}` : modelObjects ? `As of ${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}` : 'Nothing analysed yet'}
+            {due ? `Projected for ${new Date(next.forecast.projected_breach_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}` : analysed ? `As of ${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}` : 'Nothing analysed yet'}
           </p>
           <h1>
-            {next ? `The next post-mortem is ${daysTo} day${daysTo === 1 ? '' : 's'} away.` : modelObjects ? 'No incident on the horizon.' : 'Nothing to forecast yet.'}
+            {due ? `The next post-mortem is ${daysTo} day${daysTo === 1 ? '' : 's'} away.` : next ? 'No post-mortem due.' : analysed ? 'No incident on the horizon.' : modelObjects ? 'Not analysed yet.' : 'Nothing to forecast yet.'}
           </h1>
           <p className="lede">
             {next ? (
               <>
                 <strong>{next.obligation.code}</strong> — {next.obligation.title}.{' '}
-                <strong>{Math.round(next.forecast.probability * 100)} %</strong>, <strong>{fmtMoney(next.forecast.projected_cost, next.forecast.currency)}</strong>.
+                <strong>{Math.round(next.forecast.probability * 100)} %</strong>, <strong>{fmtMoney(next.forecast.projected_cost, next.forecast.currency)}</strong>{due ? '' : ` if nothing changes (published above ${Math.round(threshold * 100)} %)`}.
                 {atRisk.length > 1 && ` ${atRisk.length - 1} more at risk, ${fmtMoney(totalAtRisk)} in total.`}
               </>
-            ) : modelObjects ? (
+            ) : analysed ? (
               'Every obligation holds.'
+            ) : modelObjects ? (
+              'Run the analysis to compute the forecasts.'
             ) : (
               <>Load the demo from <button className="linklike" onClick={() => onTab('settings')}>Settings</button>, then run the analysis.</>
             )}
