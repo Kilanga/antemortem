@@ -5,6 +5,7 @@ import Overview from './tabs/Overview.jsx';
 import Obligations from './tabs/Obligations.jsx';
 import Decisions from './tabs/Decisions.jsx';
 import Settings from './tabs/Settings.jsx';
+import Averted from './tabs/Averted.jsx';
 
 export default function App() {
   const [overview, setOverview] = useState(null);
@@ -37,11 +38,26 @@ export default function App() {
     notify(res.ok ? 'ok' : 'warn', res.ok ? 'Database schema is complete.' : `Repair incomplete: ${res.error ?? res.result?.error ?? 'see logs'}`);
     refresh();
   };
+  // The analysis runs in the background (it publishes pages and creates
+  // issues); poll the latest run until it finishes.
   const runAnalysis = async () => {
     setBusy('analysis');
+    const before = overview?.lastRun?.id ?? null;
     const res = await api.runAnalysisNow();
+    if (!res.ok) { setBusy(null); return notify('warn', res.error); }
+    const started = Date.now();
+    while (Date.now() - started < 120_000) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const r = await api.getLastRun();
+      const run = r.ok ? r.lastRun : null;
+      if (run && run.id !== before && run.status !== 'running') {
+        setBusy(null);
+        notify(run.status === 'done' ? 'ok' : 'warn', run.status === 'done' ? 'Analysis complete.' : `Analysis failed: ${run.error}`);
+        return refresh();
+      }
+    }
     setBusy(null);
-    notify(res.ok ? 'ok' : 'warn', res.ok ? `Analysis run recorded (${res.durationMs} ms).` : `Analysis failed: ${res.error}`);
+    notify('warn', 'The analysis is taking longer than expected; refresh in a moment.');
     refresh();
   };
 
@@ -52,7 +68,8 @@ export default function App() {
 
   return (
     <Shell tab={tab} onTab={onTab} toast={toast} version={version}>
-      {tab === 'overview' && <Overview overview={overview} busy={busy} onRunAnalysis={runAnalysis} onRepair={repair} onTab={onTab} />}
+      {tab === 'overview' && <Overview overview={overview} busy={busy} onRunAnalysis={runAnalysis} onRepair={repair} onTab={onTab} notify={notify} refresh={refresh} />}
+      {tab === 'averted' && <Averted />}
       {tab === 'obligations' && <Obligations notify={notify} />}
       {tab === 'decisions' && <Decisions notify={notify} />}
       {tab === 'settings' && <Settings overview={overview} notify={notify} onChanged={refresh} />}

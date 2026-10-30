@@ -235,7 +235,7 @@ export function buildScenario(today = new Date()) {
       ref: 'D-5', title: 'D-5 · Service reports produced from Confluence exports',
       statement: 'Monthly service reports for Meridian are produced from the Confluence reporting space rather than the legacy spreadsheet.',
       rationale: 'One source of truth; the spreadsheet had diverged twice in Q2.',
-      decided_at: day(-62, 14), source_type: 'confluence_page', pageRef: 'd5',
+      decided_at: day(-92, 14), source_type: 'confluence_page', pageRef: 'd5',
       alternatives_rejected: [{ label: 'Keep the spreadsheet', reason: 'Two reconciliation incidents in Q2.' }],
       assumptions: [
         { statement: 'The reporting task is created at period start and owned by the service manager.', kind: 'freeform', params: {} },
@@ -246,7 +246,7 @@ export function buildScenario(today = new Date()) {
       ref: 'D-6', title: 'D-6 · Lot 2 repeat-fault programme',
       statement: 'Repeat faults on lot 2 are root-caused weekly with the equipment vendor until the rate stays under 3 % for two consecutive months.',
       rationale: 'Lot 2 breached O-2 in May.',
-      decided_at: day(-48, 10), source_type: 'confluence_page', pageRef: 'd6',
+      decided_at: day(-78, 10), source_type: 'confluence_page', pageRef: 'd6',
       alternatives_rejected: [{ label: 'Swap line cards fleet-wide', reason: 'Capex not approved.' }],
       assumptions: [
         { statement: 'Equipment vendor attends the weekly review.', kind: 'freeform', params: {} },
@@ -257,7 +257,7 @@ export function buildScenario(today = new Date()) {
       ref: 'D-7', title: 'D-7 · Lot 3 stays with Boreal Interventions (Sept. steering committee)',
       statement: 'Lot 3 (Northern zone) remains subcontracted to Boreal Interventions rather than being brought in-house for Q4.',
       rationale: 'In-housing would need two HV-qualified hires before December; Boreal has the crews and the local knowledge. Decision holds provided Boreal keeps capacity and Nordlink keeps HV cover.',
-      decided_at: day(-40, 15), source_type: 'confluence_page', pageRef: 'd7',
+      decided_at: day(-70, 15), source_type: 'confluence_page', pageRef: 'd7',
       alternatives_rejected: [
         { label: 'Bring lot 3 in-house in Q4', reason: 'Two HV hires needed by December; recruitment lead time 4–5 months.' },
         { label: 'Split lot 3 between Boreal and Helios', reason: 'Helios has no HV-qualified crew in the Northern zone; contract would need a novation.' },

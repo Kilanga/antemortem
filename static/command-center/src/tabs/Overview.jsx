@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { Card, Callout, fmtDate, fmtDateTime, fmtMoney, pretty } from '../ui.jsx';
+import { IncidentCard } from './Incidents.jsx';
 
 /**
  * Overview — week 3: forecasts per obligation, with the causal signals the
  * engine found. Week 4 turns the top forecast into a published post-mortem
  * and adds the averted ledger.
  */
-export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTab }) {
+export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTab, notify, refresh }) {
   const { schema, settings, lastRun, counts, demo } = overview;
   const [forecasts, setForecasts] = useState(null);
+  const [incidents, setIncidents] = useState([]);
   const [health, setHealth] = useState(false);
 
   useEffect(() => {
     api.listForecasts().then((r) => setForecasts(r.ok ? r.forecasts : []));
-  }, [lastRun?.id, counts.forecast]);
+    api.listIncidents().then((r) => setIncidents(r.ok ? r.open : []));
+  }, [lastRun?.id, counts.forecast, counts.future_incident]);
 
   const configured = Boolean(settings.confluenceSpaceKey && settings.actionsProjectKey);
   const modelObjects = (counts.obligation ?? 0) + (counts.decision ?? 0);
@@ -27,7 +30,7 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
     <>
       <section className="hero">
         <div>
-          <p className="eyebrow">{next ? 'Projected incident' : modelObjects ? 'All clear' : 'Week 3 · engine'}</p>
+          <p className="eyebrow">{next ? 'Projected incident' : modelObjects ? 'All clear' : 'Getting started'}</p>
           <h1>
             {next ? `Next post-mortem in ${daysTo} day${daysTo === 1 ? '' : 's'}.` : modelObjects ? 'No incident on the horizon.' : 'Nothing to forecast yet.'}
           </h1>
@@ -48,7 +51,7 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
         </div>
         <div className="actions">
           <button className="btn" onClick={onRunAnalysis} disabled={busy !== null || !schema.ok}>
-            {busy === 'analysis' ? 'Running…' : 'Run analysis now'}
+            {busy === 'analysis' ? 'Analysing…' : 'Run analysis now'}
           </button>
           <button className="btn subtle" onClick={() => setHealth(!health)}>{health ? 'Hide health' : 'Health'}</button>
         </div>
@@ -56,6 +59,8 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
 
       {demo?.status === 'running' && <Callout kind="info" title="Demo scenario is loading">Follow progress in Settings.</Callout>}
       {lastRun?.status === 'failed' && <Callout kind="warn" title="Last analysis failed"><pre className="warn">{lastRun.error}</pre></Callout>}
+
+      {incidents.map((fi) => <IncidentCard key={fi.id} incident={fi} notify={notify} onChanged={refresh} />)}
 
       {forecasts === null ? <p className="muted">Loading forecasts…</p> : forecasts.length > 0 && (
         <section className="list">

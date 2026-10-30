@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Semaine 4 — 30 oct 2026 (moteur, partie 2 : le document)
+
+- **Narratif** (`engine/narrative/`) : composition déterministe du post-mortem du futur — Impact, Root cause (la décision et ses hypothèses brisées), Timeline (faits datés puis projection en italique, liens vers les preuves), Contributing factors, Corrective actions (une par signal causal), Evidence, How this forecast was computed. Rendu en format de stockage Confluence (panneaux info / tip / warning selon l'état).
+- **Cycle de vie** (`engine/publish.js`) : au-dessus du seuil → page Confluence sous « Projected incidents » + tickets Jira d'actions correctives (labels `antemortem`, `corrective-action`) + mise à jour à chaque analyse (statuts d'actions synchronisés depuis Jira) ; sous le seuil → **averted** : page déplacée sous « Averted incidents » avec bandeau et coût évité ; date dépassée et obligation toujours rompue → **materialized** ; rejet manuel → **dismissed** avec motif. Les actions faites continuent de peser sur le score après l'aversion (pas de republication en boucle).
+- **Analyse en arrière-plan** : *Run analysis now* passe par la file d'événements (publication trop longue pour les 25 s d'un résolveur) ; l'UI interroge la dernière exécution.
+- **UI** : carte d'incident en tête de l'Overview (titre daté, probabilité, coût, bouton *Open post-mortem*, actions avec statut Jira en direct, *Dismiss* avec motif) ; onglet **Averted** (registre + total des pénalités évitées).
+- Scénario : dates des décisions reculées (D-7 en septembre, cohérent avec son titre).
+- Tests : 27 (narratif : titre, impact, root cause, timeline, actions, arithmétique, rendu).
+
+À vérifier sur site : *Run analysis now* → page Confluence datée J+16 sous « Projected incidents » + 5 tickets NFS d'actions ; fermer 2 actions → relancer → page sous « Averted incidents », 40 000 € évités.
+
 ## Semaine 3 — 30 oct 2026 (moteur, partie 1)
 
 - **Métriques** (`engine/metrics.js`) : `ratio_within_sla` (ratio courant, projection explicable : tickets ouverts proches du SLA comptés comme futurs manquements, nombre de résolutions à l'heure nécessaires pour revenir au seuil), `count_max/min`, `deadline` ; fenêtre de période calendaire ou contractuelle.

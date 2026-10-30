@@ -7,6 +7,7 @@ export function Shell({ children, toast, tab, onTab, version }) {
     ['overview', 'Overview'],
     ['obligations', 'Obligations'],
     ['decisions', 'Decisions'],
+    ['averted', 'Averted'],
     ['settings', 'Settings'],
   ];
   return (

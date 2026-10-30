@@ -36,4 +36,7 @@ export const api = {
   archiveDecision: (id) => call('archiveDecision', { id }),
   listAvailability: () => call('listAvailability'),
   listForecasts: () => call('listForecasts'),
+  getLastRun: () => call('getLastRun'),
+  listIncidents: () => call('listIncidents'),
+  dismissIncident: (id, reason) => call('dismissIncident', { id, reason }),
 };

@@ -14,6 +14,7 @@ import { obligations, decisions as decisionsRepo, assumptions as assumptionsRepo
 import { getSettings } from '../settings.js';
 import { graphSourceFor } from '../graph/index.js';
 import { analyseObligation } from './analyse.js';
+import { reconcileIncident } from './publish.js';
 
 export async function runAnalysis({ source = 'manual', now = new Date() } = {}) {
   const startedAt = new Date();
@@ -74,11 +75,25 @@ export async function runAnalysis({ source = 'manual', now = new Date() } = {}) 
       for (const p of previous) await forecastsRepo.update(p.id, { superseded_by: fc.id });
       summary.forecastsComputed += 1;
 
-      results.push({ ...result, forecastId: fc.id });
+      results.push({ ...result, decisions, forecastId: fc.id });
       summary.results.push({ code: obligation.code, probability: result.forecast.probability, breach: result.forecast.projected_breach_date, cost: result.forecast.projected_cost, signals: detected.map((s) => s.type), metric: { current: result.metric.current, projected: result.metric.projected, threshold: result.metric.threshold } });
     }
 
-    // Week 4: publication / aversion of future incidents goes here.
+    // Publication / aversion of future incidents.
+    for (const r of results) {
+      try {
+        const outcome = await reconcileIncident({ result: r, settings, now });
+        if (outcome.action === 'published') summary.incidentsPublished += 1;
+        if (outcome.action === 'averted') summary.incidentsAverted += 1;
+        const entry = summary.results.find((x) => x.code === r.obligation.code);
+        if (entry) entry.incident = outcome.action;
+      } catch (err) {
+        console.error(`[antemortem] publish failed for ${r.obligation.code}`, err);
+        const entry = summary.results.find((x) => x.code === r.obligation.code);
+        if (entry) entry.incident = `error: ${String(err?.message ?? err)}`;
+      }
+    }
+
     await updateById('analysis_run', runId, { status: 'done', finished_at: new Date(), summary });
     return { runId, ok: true, durationMs: Date.now() - startedAt.getTime(), summary };
   } catch (err) {
@@ -116,7 +131,7 @@ async function resolveMissingSignals(obligation, decisions, fingerprints, now) {
 
 /** Corrective actions attached to the latest incident for this obligation. */
 async function actionsSummary(obligationId) {
-  const [fi] = await futureIncidents.list({ where: "obligation_id = ? AND status IN ('published','draft')", params: [obligationId], limit: 1 });
+  const [fi] = await futureIncidents.list({ where: "obligation_id = ? AND status IN ('published','draft','averted')", params: [obligationId], orderBy: 'created_at DESC', limit: 1 });
   if (!fi) return { open: 0, doneSinceLast: 0 };
   const items = await actionItems.list({ where: 'future_incident_id = ?', params: [fi.id], limit: 50 });
   return { open: items.filter((a) => a.status === 'open' || a.status === 'in_progress').length, doneSinceLast: items.filter((a) => a.status === 'done').length };

@@ -11,11 +11,11 @@
 import Resolver from '@forge/resolver';
 import { getSchemaStatus, runMigrations } from '../db/migrate.js';
 import { getSettings, saveSettings } from '../settings.js';
-import { runAnalysis } from '../engine/index.js';
+import { dismissIncident } from '../engine/publish.js';
 import { query, parseJson } from '../db/client.js';
 import { currentUserHasPermission, searchIssues } from '../jira/client.js';
 import {
-  contracts, obligations, decisions, assumptions, availability,
+  contracts, obligations, decisions, assumptions, availability, futureIncidents,
   listObligationsWithContract, listDecisionsWithAssumptions, linkObjects, hydrate,
 } from '../db/repo/index.js';
 import { getProgress } from '../demo/seed.js';
@@ -56,7 +56,7 @@ resolver.define(
     }
     return {
       ok: true,
-      app: { name: 'Antemortem', version: '0.3.0', week: 3 },
+      app: { name: 'Antemortem', version: '0.4.0', week: 4 },
       user: { accountId: req.context?.accountId ?? null },
       site: { cloudId: req.context?.cloudId ?? null, siteUrl: req.context?.siteUrl ?? null },
       schema,
@@ -74,7 +74,18 @@ resolver.define('repairDatabase', admin(async () => {
   return { ok: result.ok && schema.ok, result, schema };
 }));
 
-resolver.define('runAnalysisNow', admin(async () => ({ ok: true, ...(await runAnalysis({ source: 'manual' })) })));
+resolver.define('runAnalysisNow', admin(async () => {
+  const [running] = await query("SELECT id FROM analysis_run WHERE status = 'running' AND started_at > DATE_SUB(NOW(), INTERVAL 20 MINUTE) LIMIT 1");
+  if (running) return { ok: false, error: 'An analysis is already running.' };
+  await jobsQueue.push({ body: { job: 'run-analysis', source: 'manual' } });
+  return { ok: true, queued: true };
+}));
+
+/** Latest analysis run — polled by the UI after "Run analysis now". */
+resolver.define('getLastRun', safe(async () => {
+  const rows = await query('SELECT id, trigger_source, started_at, finished_at, status, summary, error FROM analysis_run ORDER BY started_at DESC LIMIT 1');
+  return { ok: true, lastRun: rows[0] ?? null };
+}));
 
 resolver.define('getSettings', safe(async () => ({ ok: true, settings: await getSettings() })));
 resolver.define('saveSettings', admin(async (req) => ({ ok: true, settings: await saveSettings(req.payload ?? {}) })));
@@ -233,6 +244,27 @@ resolver.define('listForecasts', safe(async () => {
     return { obligation: o, forecast: f, signals };
   });
   return { ok: true, forecasts: out };
+}));
+
+// ---------------------------------------------------------------------------
+// Future incidents
+// ---------------------------------------------------------------------------
+
+resolver.define('listIncidents', safe(async () => {
+  const open = await futureIncidents.list({ where: "status IN ('draft','published')", orderBy: 'incident_date ASC', limit: 50 });
+  const averted = await futureIncidents.list({ where: "status IN ('averted','materialized','dismissed')", orderBy: 'updated_at DESC', limit: 100 });
+  const obls = await obligations.list({ limit: 500, includeArchived: true });
+  const codeById = new Map(obls.map((o) => [o.id, { code: o.code, title: o.title }]));
+  const decorate = (fi) => ({ ...fi, obligation: codeById.get(fi.obligation_id) ?? null });
+  return { ok: true, open: open.map(decorate), averted: averted.map(decorate), costAvoided: averted.filter((f) => f.status === 'averted').reduce((n, f) => n + Number(f.cost_avoided ?? 0), 0) };
+}));
+
+resolver.define('dismissIncident', admin(async (req) => {
+  const id = str(req.payload?.id, 36);
+  const reason = str(req.payload?.reason, 1000);
+  if (!id) return { ok: false, error: 'Missing id.' };
+  const fi = await dismissIncident(id, reason);
+  return fi ? { ok: true, incident: fi } : { ok: false, error: 'Not found.' };
 }));
 
 resolver.define('listAvailability', safe(async () => ({ ok: true, availability: await availability.list({ orderBy: 'starts_on DESC' }) })));
