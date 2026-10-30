@@ -10,7 +10,8 @@
     "build:ui": "npm --prefix static/command-center run build",
     "install:ui": "npm --prefix static/command-center install",
     "deploy:dev": "npm run build:ui && forge deploy --non-interactive -e development --approve MAJOR_VERSION_RULE",
-    "lint": "forge lint"
+    "lint": "forge lint",
+    "deploy:prod": "npm run build:ui && forge deploy --non-interactive -e production --approve MAJOR_VERSION_RULE"
   },
   "devDependencies": {
     "eslint": "^8.56.0",
