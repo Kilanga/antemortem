@@ -50,3 +50,13 @@ Thumbs.db
 
 
 /.forge/
+
+# Local AI-agent tooling installed by `forge skills install` (not part of the app)
+/.claude/
+/.agents/
+/.codex/
+/.github/skills/
+/.vscode/
+
+# Local build output of the command center
+/static/command-center/dist/

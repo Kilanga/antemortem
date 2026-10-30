@@ -153,14 +153,14 @@ export function buildScenario(today = new Date()) {
     description: 'Physical access badges for the 14 Northern-zone sites added in September. Without them, Boreal crews need a Nordlink escort on site, which adds 1–2 h per intervention.',
   });
   const amendment = add({
-    summary: 'Badge supplier contract amendment (SecurePass)',
+    summary: 'Badge supplier contract amendment (Varlock Access)',
     labels: ['procurement'],
     resolved: false,
     startedAt: day(-24, 10),
     dueAt: day(-6, 17),
     resolvedAt: null,
     lastActivityAt: day(-9, 15),
-    description: 'Amendment to add 14 sites to the SecurePass badge contract. Waiting for legal review since the 20th.',
+    description: 'Amendment to add 14 sites to the Varlock Access badge contract. Waiting for legal review since the 20th.',
   });
 
   // --- The contradiction: part of lot 3 quietly moved to another vendor

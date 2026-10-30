@@ -15,7 +15,7 @@ const obligations = [
 
 const chain = [
   { at: d(-70), role: 'root', kind: 'decision', title: 'D-7 · Lot 3 stays with Boreal Interventions (Sept. steering committee)' },
-  { at: d(-9), role: 'event', kind: 'assumption_dependency_slipping', evidence: { issueKey: 'NFS-87', summary: 'Site access badges — Northern zone, batch 3', deadline: d(2), blockedBy: [{ key: 'NFS-88', summary: 'Badge supplier contract amendment (SecurePass)', idleDays: 9 }] } },
+  { at: d(-9), role: 'event', kind: 'assumption_dependency_slipping', evidence: { issueKey: 'NFS-87', summary: 'Site access badges — Northern zone, batch 3', deadline: d(2), blockedBy: [{ key: 'NFS-88', summary: 'Badge supplier contract amendment (Varlock Access)', idleDays: 9 }] } },
   { at: d(-3), role: 'event', kind: 'assumption_person_unavailable', evidence: { displayName: 'Karim Benali', kind: 'reassigned', startsOn: d(-3), endsOn: d(30), note: 'Reassigned to the lot 1 ramp-up (Western zone) by ops planning', heldIssues: ['NFS-44', 'NFS-45', 'NFS-46', 'NFS-47'] } },
   { at: d(-1), role: 'event', kind: 'decision_contradicted', evidence: { divergent: [{ key: 'NFS-89', summary: 'Reassign 4 Northern-zone interventions to Helios Services', label: 'vendor-helios' }], decision: 'D-7 · Lot 3 stays with Boreal Interventions (Sept. steering committee)' } },
   { at: d(0), role: 'event', kind: 'assumption_capacity_exceeded', evidence: { teamRef: 'vendor-boreal', openIssues: 31, maxOpenIssues: 25 } },
