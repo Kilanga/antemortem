@@ -66,7 +66,7 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
       {demo?.status === 'running' && <Callout kind="info" title="Demo scenario is loading">Follow progress in Settings.</Callout>}
       {lastRun?.status === 'failed' && <Callout kind="warn" title="Last analysis failed"><pre className="warn">{lastRun.error}</pre></Callout>}
 
-      {incidents.map((fi) => <IncidentCard key={fi.id} incident={fi} notify={notify} onChanged={refresh} />)}
+      {incidents.map((fi) => <IncidentCard key={fi.id} incident={fi} notify={notify} onChanged={() => { api.listIncidents().then((r) => setIncidents(r.ok ? r.open : [])); refresh(); }} />)}
 
       {forecasts === null ? <p className="muted">Loading forecasts…</p> : forecasts.length > 0 && (
         <section className="list">
