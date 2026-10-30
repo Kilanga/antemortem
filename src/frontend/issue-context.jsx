@@ -35,11 +35,11 @@ const App = () => {
       {incidents.map((fi) => (
         <Box key={fi.id}>
           <Inline space="space.100" alignBlock="center">
-            <Lozenge appearance="removed" isBold>{fi.role === 'action' ? 'Corrective action' : 'In a projected incident'}</Lozenge>
-            <Text><Strong>{Math.round((fi.probability ?? 0) * 100)} %</Strong></Text>
+            <Lozenge appearance={fi.status === 'averted' ? 'success' : 'removed'} isBold>{fi.status === 'averted' ? (fi.role === 'action' ? 'Helped avert an incident' : 'In an averted incident') : fi.role === 'action' ? 'Corrective action' : 'In a projected incident'}</Lozenge>
+            {fi.status !== 'averted' && <Text><Strong>{Math.round((fi.probability ?? 0) * 100)} %</Strong></Text>}
           </Inline>
           <Text>{fi.url ? <Link href={fi.url} openNewTab>{fi.title}</Link> : fi.title}</Text>
-          <Text><Em>Projected for {fi.incidentDate} · {fi.cost}</Em></Text>
+          <Text><Em>{fi.status === 'averted' ? `Was projected for ${fi.incidentDate} · ${fi.cost} avoided` : `Projected for ${fi.incidentDate} · ${fi.cost}`}</Em></Text>
         </Box>
       ))}
       {obligations.map((o) => (

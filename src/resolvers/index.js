@@ -390,12 +390,12 @@ resolver.define('getIssueContext', safe(async (req) => {
   }
 
   // Projected incidents that mention the issue (timeline evidence or corrective action).
-  const open = await futureIncidents.list({ where: "status IN ('draft','published')", limit: 20 });
+  const open = await futureIncidents.list({ where: "status IN ('draft','published','averted')", orderBy: 'created_at DESC', limit: 30 });
   const incidentsOut = [];
   for (const fi of open) {
     const asAction = (fi.actions?.items ?? []).find((a) => a.issue_key === issueKey);
     const inTimeline = JSON.stringify(fi.timeline ?? []).includes(issueKey);
-    if (asAction || inTimeline) incidentsOut.push({ id: fi.id, title: fi.title, url: fi.confluence_page_url, incidentDate: String(fi.incident_date).slice(0, 10), probability: fi.actions?.probability ?? null, cost: fi.actions?.cost != null ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: fi.actions.currency ?? 'EUR', maximumFractionDigits: 0 }).format(fi.actions.cost) : '', role: asAction ? 'action' : 'evidence' });
+    if (asAction || inTimeline) incidentsOut.push({ id: fi.id, title: fi.title, url: fi.confluence_page_url, incidentDate: String(fi.incident_date).slice(0, 10), probability: fi.actions?.probability ?? null, cost: fi.actions?.cost != null ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: fi.actions.currency ?? 'EUR', maximumFractionDigits: 0 }).format(fi.actions.cost) : '', role: asAction ? 'action' : 'evidence', status: fi.status });
   }
   return { ok: true, issueKey, obligations: obligationsOut, assumptions: assumptionsOut, decisions: decisionsOut, incidents: incidentsOut, siteUrl };
 }));
