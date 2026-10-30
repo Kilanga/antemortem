@@ -57,10 +57,9 @@ modules:
       name: Read a Confluence page to propose a decision and its assumptions
       function: rovo-read-page
       actionVerb: GET
-      description: >
-        Reads a Confluence page (steering-committee minutes, a contract page) and returns its text
-        with the references available for typing assumptions. Use when the user points at a page
-        and wants the decision and its assumptions recorded. Propose first; record only after the user confirms.
+      description: >-
+        Reads a Confluence page and returns its text plus the references usable to type assumptions.
+        Use when the user points at a page to record a decision. Propose first; record only after confirmation.
       inputs:
         page:
           title: Page
