@@ -122,14 +122,14 @@ Pour les agents de code : brancher le **Forge MCP Server** officiel (developer.a
 | Module | Rôle |
 |---|---|
 | `jira:globalPage` (Custom UI, React) | **Command center** : post-mortems à venir, incidents évités, obligations, décisions |
-| `jira:issuePanel` (UI Kit) | Sur un ticket : obligations impactées, décisions liées, « ce ticket apparaît dans le post-mortem du 14/12 » |
+| `jira:issueContext` (UI Kit) | Sur un ticket (panneau latéral, toujours visible) : obligations alimentées, hypothèses et décisions liées, « ce ticket apparaît dans le post-mortem du 14/12 » |
 | `jira:issueAction` (UI Kit, modal) | « Record a decision from this issue » |
 | `confluence:contentAction` ou macro (UI Kit) | « Record a decision from this page » ; macro « Decision card » |
 | `scheduledTrigger` (hour) | Lance le moteur d'analyse + migrations SQL |
 | `trigger` (événements Jira : issue created/updated/transitioned, assignee changed, comment) | Recalcul incrémental ; `filter.ignoreSelf: true` |
 | `trigger` (`avi:forge:installed:app`) | Création du schéma + config par défaut |
 | `webtrigger` | « Run analysis now » appelable depuis la démo et les tests |
-| `rovo:agent` + `action` ×4 | Agent *Antemortem* : *what is my next post-mortem?*, *why is obligation X at risk?*, *record a decision*, *mark action done* |
+| `rovo:agent` + `action` ×5 | Agent *Antemortem* : *what is my next post-mortem?*, *why is obligation X at risk?*, *how are our obligations doing?*, *corrective actions*, *record a decision* |
 | `rovo:mcp` (optionnel, si temps) | Exposer les mêmes actions comme outils MCP |
 | `sql` | Base du modèle |
 | `function` | Résolveurs Custom UI, moteur, générateur |

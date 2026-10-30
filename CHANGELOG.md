@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Semaines 5–7 (anticipées) — 30 oct 2026
+
+- **Agent Rovo « Antemortem »** (`rovo:agent`, prompt en ressource) avec cinq actions : `get-next-incident`, `explain-obligation`, `list-obligation-status`, `list-corrective-actions`, `record-decision`. Scope `read:chat:rovo` : les actions sont utilisables comme outils par les agents créés par les clients (argument pour le bonus Best Agents).
+- **Panneau de ticket** (`jira:issueContext`, UI Kit) : obligations alimentées par le ticket, hypothèses qui le mentionnent (avec leur décision), décisions contredites, incidents projetés où il apparaît.
+- **Durcissement** : webtrigger protégé par jeton (généré à la demande, jamais renvoyé par les résolveurs de settings), analyse via la file ; carte « Automation hook » dans Settings.
+- **Documents de soumission** : `JUDGE_INSTRUCTIONS.md` (parcours juge en 7 étapes, 10 min, en anglais) et `DEMO_SCRIPT.md` (plan de tournage chronométré à 3:00, voix off, règles de tournage).
+- Manifest : nouveaux modules + scope → **montée de version majeure, `forge install --upgrade` sur Jira et Confluence**. Premier module UI Kit du projet (`src/frontend/issue-context.jsx`, `@forge/react`).
+
+À vérifier sur site : déploiement (linter UI Kit), panneau sur NFS-87, agent dans Rovo, puis le parcours complet de JUDGE_INSTRUCTIONS.md.
+
 ## Semaine 4 — 30 oct 2026 (moteur, partie 2 : le document)
 
 - **Narratif** (`engine/narrative/`) : composition déterministe du post-mortem du futur — Impact, Root cause (la décision et ses hypothèses brisées), Timeline (faits datés puis projection en italique, liens vers les preuves), Contributing factors, Corrective actions (une par signal causal), Evidence, How this forecast was computed. Rendu en format de stockage Confluence (panneaux info / tip / warning selon l'état).
