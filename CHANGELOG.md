@@ -1,10 +1,26 @@
+# CHANGELOG
+
+## 0.8.1 — vérification sur site (30 oct, soir)
+
+- Déployé v4.0.0 (version majeure : module `macro`, action Rovo). Vérifié sur `antemortem-dev` : publication Confluence sous *Projected incidents*, 5 tickets d'action NFS-91…95, panneau issue sur NFS-87, cycle *averted* (2 actions Done → page archivée sous *Averted incidents*, €40 000 évités), what-if et History sur données réelles, macro insérée depuis `/Antemortem`.
+- Corrigés à cette occasion : onglet Settings blanc (hooks imbriqués dans un effet) ; lien « Source decision » rendu en texte (argument mal placé) ; prévision — les actions qui existent sans avancer ne baissent plus la probabilité (sinon l'incident s'évitait tout seul à l'analyse suivante) ; 0,075 par hypothèse cassée pour que le what-if reste monotone ; en-tête Overview quand aucun post-mortem n'est dû ou que rien n'est analysé ; macro lisant les pages publiées (Forge SQL est par installation : Confluence ne voit pas la base de Jira) ; statuts des actions relus depuis Jira avant la prévision (une action rouverte recomptait sinon pour toujours comme terminée) ; panneau issue affichant aussi les incidents évités.
+- Vérifié après redéploiement : en-tête « No post-mortem due » à 50 % ; macro lisant l'espace.
+- Non vérifié : agent Rovo — Rovo Chat n'est pas disponible sur le site de dev (redirige vers la page marketing). À régler côté admin/licence avant de tester l'agent.
+
+## 0.8.0 — aller plus loin
+
+- What-if : sur la chaîne causale, chaque événement a une case « et si c'était réglé ? » ; la probabilité est recalculée sans cette preuve, sans rien écrire. Une case « toutes les interventions ouvertes restaurées dans le SLA » montre que la période ferme quand même sous 95 %.
+- History (backtest) : rejoue le moteur sur l'état du travail tous les deux jours depuis le début de la période ; courbe, date de franchissement du seuil, jours d'avance. Vue « as of » du graphe.
+- Détecteur de tendance : plus de signal sur moins de 10 tickets résolus.
+- Détecteur `person_silent` : ≥ 2 tickets ouverts détenus sans activité depuis ≥ 5 jours.
+- Onglet Portfolio ; macro Confluence ; action Rovo `read-page-for-decision` + hypothèses typées dans `record-decision` ; resolvers `whatIf`, `backtest`, `getMacroSummary`.
+
 ## 0.7.0 — passe de densité
 
 - Post-mortem : Impact en deux phrases ; suppression des commentaires éditoriaux (« Nothing in Jira or Confluence linked… », « Italic rows are projections… », « Deterministic: no language model… ») ; facteurs contributifs limités à ce que la cause racine ne dit pas déjà ; section Evidence réduite à la décision source (les tickets sont déjà liés dans la timeline) ; méthode condensée en trois lignes.
 - App : lede de chaque onglet réduit à une phrase ; suppression du résumé répété sous le titre d'incident, du mode d'emploi sous les actions correctives et de l'horodatage par ligne ; chaîne causale raccourcie (titres de décision non répétés) ; explication du score sur une ligne.
 - Agent Rovo : réponses limitées à quatre phrases, sans explication du produit.
 
-# CHANGELOG
 
 ## Semaines 5–7 (anticipées) — 30 oct 2026
 
