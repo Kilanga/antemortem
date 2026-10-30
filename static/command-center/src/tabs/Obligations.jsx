@@ -38,11 +38,7 @@ export default function Obligations({ notify }) {
         <div>
           <p className="dateline">What the contract requires</p>
           <h1>Obligations</h1>
-          <p className="lede">
-            A measurable rule from a contract, tied to the Jira issues that feed it. Jira has SLAs per ticket; it has no
-            object for <em>"95 % of lot 3 interventions under 4 h, measured over the period, or 2 % off the invoice"</em>.
-            This is that object.
-          </p>
+          <p className="lede">A measurable rule from a contract, and the Jira issues that feed it.</p>
         </div>
         <div className="actions">
           <button className="btn" onClick={() => setEditing('new')} disabled={!contracts.length}>New obligation</button>

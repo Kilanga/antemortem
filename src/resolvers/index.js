@@ -58,7 +58,7 @@ resolver.define(
     }
     return {
       ok: true,
-      app: { name: 'Antemortem', version: '0.4.0', week: 4 },
+      app: { name: 'Antemortem', version: '0.7.0', week: 7 },
       user: { accountId: req.context?.accountId ?? null },
       site: { cloudId: req.context?.cloudId ?? null, siteUrl: req.context?.siteUrl ?? null },
       schema,

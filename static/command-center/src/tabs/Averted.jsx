@@ -11,7 +11,7 @@ export default function Averted() {
         <div>
           <p className="dateline">The other ledger</p>
           <h1>Incidents that never happened</h1>
-          <p className="lede">Every page here was a post-mortem written before its incident. The corrective actions were completed in time, and the document archived itself.</p>
+          <p className="lede">Post-mortems written before their incident, archived once the actions were done.</p>
         </div>
       </section>
       {data === null ? <p className="muted">Loading…</p> : <AvertedLedger items={data.averted} costAvoided={data.costAvoided} />}

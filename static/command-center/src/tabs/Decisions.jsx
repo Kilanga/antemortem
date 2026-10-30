@@ -32,12 +32,9 @@ export default function Decisions({ notify }) {
     <>
       <section className="hero compact">
         <div>
-          <p className="dateline">What was decided, and what it rests on</p>
+          <p className="dateline">Decisions and assumptions</p>
           <h1>Decisions</h1>
-          <p className="lede">
-            "We chose A over B because we assumed C." Nothing in the platform records C, so nothing notices when C stops
-            being true. Each assumption below is typed so the engine can watch it against the work graph.
-          </p>
+          <p className="lede">What was decided, and the assumptions it rests on — each one watched against the work.</p>
         </div>
         <div className="actions"><button className="btn" onClick={() => setEditing('new')}>Record a decision</button></div>
       </section>
@@ -146,7 +143,7 @@ function DecisionEditor({ initial, obligations, onClose, onSaved, notify }) {
         </div>
 
         <div className="span2">
-          <div className="section-title">Assumptions this decision rests on <span className="muted">(what the engine watches)</span></div>
+          <div className="section-title">Assumptions</div>
           {form.assumptions.map((a, i) => {
             const kind = KINDS.find((k) => k[0] === a.kind) ?? KINDS[KINDS.length - 1];
             return (

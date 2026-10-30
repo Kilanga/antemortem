@@ -39,15 +39,14 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
           <p className="lede">
             {next ? (
               <>
-                <strong>{next.obligation.code}</strong> — {next.obligation.title}. Probability{' '}
-                <strong>{Math.round(next.forecast.probability * 100)} %</strong>, projected cost{' '}
-                <strong>{fmtMoney(next.forecast.projected_cost, next.forecast.currency)}</strong> on {fmtDate(next.forecast.projected_breach_date)}.
-                {atRisk.length > 1 && ` ${atRisk.length - 1} more obligation${atRisk.length > 2 ? 's are' : ' is'} at risk, ${fmtMoney(totalAtRisk)} at stake in total.`}
+                <strong>{next.obligation.code}</strong> — {next.obligation.title}.{' '}
+                <strong>{Math.round(next.forecast.probability * 100)} %</strong>, <strong>{fmtMoney(next.forecast.projected_cost, next.forecast.currency)}</strong>.
+                {atRisk.length > 1 && ` ${atRisk.length - 1} more at risk, ${fmtMoney(totalAtRisk)} in total.`}
               </>
             ) : modelObjects ? (
-              'Every active obligation holds, and the assumptions behind the decisions they depend on still stand.'
+              'Every obligation holds.'
             ) : (
-              <>Antemortem writes the post-mortem of an incident <em>before</em> it happens. Load the demo from <button className="linklike" onClick={() => onTab('settings')}>Settings</button>, then run the analysis.</>
+              <>Load the demo from <button className="linklike" onClick={() => onTab('settings')}>Settings</button>, then run the analysis.</>
             )}
           </p>
         </div>
@@ -142,7 +141,7 @@ function ForecastRow({ item }) {
           {m && m.kind === 'ratio_within_sla' && (
             <div className="meter" title={`current ${Math.round(m.current * 100)} % · projected ${Math.round(m.projected * 100)} % · threshold ${Math.round(m.threshold * 100)} %`}>
               <div className="meter-bar"><span className="meter-cur" style={{ width: `${m.current * 100}%` }} /><span className="meter-proj" style={{ left: `${m.projected * 100}%` }} /><span className="meter-thr" style={{ left: `${m.threshold * 100}%` }} /></div>
-              <div className="meter-legend muted small">{Math.round(m.current * 100)} % today, {Math.round(m.projected * 100)} % projected, {Math.round(m.threshold * 100)} % required</div>
+              <div className="meter-legend muted small">{Math.round(m.current * 100)} % → {Math.round(m.projected * 100)} %, required {Math.round(m.threshold * 100)} %</div>
             </div>
           )}
           {!healthy && signals.length > 0 && (
@@ -151,7 +150,6 @@ function ForecastRow({ item }) {
         </div>
         <div className="row-side">
           {!healthy && <div className="penalty">{fmtMoney(f.projected_cost, f.currency)}</div>}
-          <div className="muted small">{f ? `analysed ${fmtDateTime(f.computed_at)}` : ''}</div>
           {f && !healthy && <button className="linklike" onClick={() => setOpen(!open)}>{open ? 'Hide chain' : 'Show chain'}</button>}
         </div>
       </div>
@@ -166,8 +164,8 @@ function ForecastRow({ item }) {
             ))}
           </ol>
           <div className="explain muted small">
-            {f.explanation?.steps?.map((s, i) => <div key={i}>{s.delta > 0 ? '+' : ''}{s.delta} — {s.label}</div>)}
-            <div>cost: {f.explanation?.cost}</div>
+            {f.explanation?.steps?.map((s, i) => <span key={i}>{s.delta > 0 ? '+' : ''}{s.delta} {s.label.toLowerCase()}{i < f.explanation.steps.length - 1 ? ' · ' : ''}</span>)}
+            {' = '}{f.probability} · {f.explanation?.cost}
           </div>
         </div>
       )}
@@ -179,14 +177,14 @@ function chainText(e) {
   const ev = e.evidence ?? {};
   switch (e.role) {
     case 'root': return `Decision: ${e.title}`;
-    case 'projection': return `Projected breach of ${e.obligationCode}: ${Math.round((e.metric?.projected ?? 0) * 100)} % vs ${Math.round((e.metric?.threshold ?? 0) * 100)} % — ${fmtMoney(e.cost, e.currency)} (${Math.round(e.probability * 100)} %)`;
-    case 'measurement': return `${ev.code}: ${Math.round(ev.current * 100)} % within SLA today, ${Math.round(ev.projected * 100)} % projected (${ev.open} open, ${ev.openNearSla?.length ?? 0} near the SLA)`;
+    case 'projection': return `${e.obligationCode} breached: ${Math.round((e.metric?.projected ?? 0) * 100)} % vs ${Math.round((e.metric?.threshold ?? 0) * 100)} % — ${fmtMoney(e.cost, e.currency)}`;
+    case 'measurement': return `${ev.code} at ${Math.round(ev.current * 100)} %, projected ${Math.round(ev.projected * 100)} % (${ev.open} open, ${ev.openNearSla?.length ?? 0} near the limit)`;
     default:
       switch (e.kind) {
-        case 'assumption_capacity_exceeded': return `${ev.teamRef}: ${ev.openIssues} open issues, assumption was ≤ ${ev.maxOpenIssues}`;
-        case 'assumption_person_unavailable': return `${ev.displayName} ${ev.kind} ${fmtDate(ev.startsOn)} → ${fmtDate(ev.endsOn)}${ev.heldIssues?.length ? `, still holds ${ev.heldIssues.join(', ')}` : ''}${ev.note ? ` — ${ev.note}` : ''}`;
-        case 'assumption_dependency_slipping': return `${ev.issueKey} "${ev.summary}" due ${fmtDate(ev.deadline)}${ev.blockedBy?.length ? `, blocked by ${ev.blockedBy[0].key} (no activity for ${ev.blockedBy[0].idleDays} days)` : ''}`;
-        case 'decision_contradicted': return `${ev.divergent?.[0]?.key} "${ev.divergent?.[0]?.summary}" routes work to ${ev.divergent?.[0]?.label}, contradicting "${ev.decision}"`;
+        case 'assumption_capacity_exceeded': return `${ev.teamRef} at ${ev.openIssues} open issues (ceiling ${ev.maxOpenIssues})`;
+        case 'assumption_person_unavailable': return `${ev.displayName} ${ev.kind} until ${fmtDate(ev.endsOn)}${ev.heldIssues?.length ? `, still holds ${ev.heldIssues.length} issues` : ''}`;
+        case 'assumption_dependency_slipping': return `${ev.issueKey} due ${fmtDate(ev.deadline)}${ev.blockedBy?.length ? `, blocked by ${ev.blockedBy[0].key} (idle ${ev.blockedBy[0].idleDays} days)` : ''}`;
+        case 'decision_contradicted': return `${ev.divergent?.[0]?.key} routes work to ${ev.divergent?.[0]?.label}, contrary to the decision`;
         case 'stale_critical_issue': return `${ev.issueKey} idle for ${ev.idleDays} days, due ${fmtDate(ev.dueOn)}`;
         case 'single_point_of_failure': return `${ev.personRef} holds ${ev.openIssues} of the open issues (${Math.round(ev.share * 100)} %)`;
         default: return e.kind;

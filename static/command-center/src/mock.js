@@ -49,7 +49,7 @@ const incident = {
 
 const overview = {
   ok: true,
-  app: { name: 'Antemortem', version: '0.6.0', week: 6 },
+  app: { name: 'Antemortem', version: '0.7.0', week: 7 },
   user: { accountId: 'mock' }, site: { siteUrl: 'https://example.atlassian.net' },
   schema: { ok: true, missing: [], tables: ['contract', 'obligation', 'decision', 'assumption', 'link', 'risk_signal', 'forecast', 'future_incident', 'action_item', 'availability', 'analysis_run'].map((t) => ({ table: t, ok: true, rows: 4 })) },
   settings: { confluenceSpaceKey: 'ANTE', actionsProjectKey: 'NFS', publishThreshold: 0.6, graphSource: 'rest', demoLoaded: true, demoLoadedAt: dt(0, 8) },

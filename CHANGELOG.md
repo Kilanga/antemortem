@@ -1,3 +1,9 @@
+## 0.7.0 — passe de densité
+
+- Post-mortem : Impact en deux phrases ; suppression des commentaires éditoriaux (« Nothing in Jira or Confluence linked… », « Italic rows are projections… », « Deterministic: no language model… ») ; facteurs contributifs limités à ce que la cause racine ne dit pas déjà ; section Evidence réduite à la décision source (les tickets sont déjà liés dans la timeline) ; méthode condensée en trois lignes.
+- App : lede de chaque onglet réduit à une phrase ; suppression du résumé répété sous le titre d'incident, du mode d'emploi sous les actions correctives et de l'horodatage par ligne ; chaîne causale raccourcie (titres de décision non répétés) ; explication du score sur une ligne.
+- Agent Rovo : réponses limitées à quatre phrases, sans explication du produit.
+
 # CHANGELOG
 
 ## Semaines 5–7 (anticipées) — 30 oct 2026

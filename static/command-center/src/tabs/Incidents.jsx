@@ -24,9 +24,8 @@ export function IncidentCard({ incident: fi, notify, onChanged }) {
     <article className="incident">
       <header className="incident-head">
         <div>
-          <p className="dateline risk">A post-mortem written {daysTo} day{daysTo === 1 ? '' : 's'} before its incident</p>
+          <p className="dateline risk">Written {daysTo} day{daysTo === 1 ? '' : 's'} before the incident</p>
           <h2 className="incident-title">{fi.title}</h2>
-          <p className="muted">{fi.summary}</p>
         </div>
         <div className="incident-side">
           <div className="fact"><span className="big">{fmtMoney(fi.actions?.cost, fi.actions?.currency)}</span><span className="fact-label">projected penalty</span></div>
@@ -54,7 +53,6 @@ export function IncidentCard({ incident: fi, notify, onChanged }) {
               ))}
             </ul>
           ) : <p className="muted small">No corrective actions were created (check the Jira project key in Settings).</p>}
-          <p className="hint">Close them in Jira and run the analysis again. When the probability drops below the publish threshold, this post-mortem archives itself under Averted incidents.</p>
           <div className="inline dismiss">
             <input className="grow" placeholder="Reason (optional) — e.g. penalty waived by the client" value={reason} onChange={(e) => setReason(e.target.value)} />
             <ConfirmButton className="btn subtle" label="Dismiss" confirmLabel="Dismiss — confirm" onConfirm={dismiss} />
@@ -66,7 +64,7 @@ export function IncidentCard({ incident: fi, notify, onChanged }) {
 }
 
 export function AvertedLedger({ items, costAvoided }) {
-  if (!items.length) return <p className="muted">No incident has been averted yet. When a projected post-mortem's probability drops below the publish threshold, it lands here with the cost it avoided.</p>;
+  if (!items.length) return <p className="muted">Nothing averted yet.</p>;
   return (
     <>
       <div className="ledger-total"><span className="big">{fmtMoney(costAvoided)}</span><span className="muted"> in penalties that never happened</span></div>

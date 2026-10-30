@@ -33,8 +33,7 @@ export function composeIncident({ obligation, contract, decisions, metric, signa
   } else {
     impact.push(`On ${longDate(breach)}, ${obligation.code} (${obligation.title}) is breached: ${metric.current} against a limit of ${metric.threshold}.`);
   }
-  impact.push(`${penaltySentence(obligation, forecast)} ${contract?.counterparty ? `${contract.counterparty} applies it on the next invoice.` : ''}`.trim());
-  impact.push(`Probability as of ${longDate(now)}: ${pct} %.`);
+  impact.push(penaltySentence(obligation, forecast));
 
   // --- Root cause ---------------------------------------------------------
   const rootDecision = decisions[0] ?? null;
@@ -43,7 +42,6 @@ export function composeIncident({ obligation, contract, decisions, metric, signa
   if (rootDecision && broken.length) {
     rootCause.push(`The root cause is not a late ticket. It is a decision — "${rootDecision.title}" (${longDate(rootDecision.decided_at)}) — that rested on ${rootDecision.assumptions?.length ?? broken.length} assumptions, ${broken.length} of which no longer hold${broken.length === (rootDecision.assumptions?.length ?? broken.length) ? '' : ' today'}:`);
     for (const a of broken) rootCause.push(`• ${assumptionSentence(a)}`);
-    rootCause.push(`Nothing in Jira or Confluence linked these facts to ${obligation.code}; each was known to someone, none was known as a whole.`);
   } else if (trend.code) {
     rootCause.push(`The restoration rate on ${scopeLabel} fell below the contractual bar and the open workload did not allow a recovery before the period closed.`);
   } else {
@@ -58,50 +56,37 @@ export function composeIncident({ obligation, contract, decisions, metric, signa
     link: linkFor(e, siteUrl),
   }));
 
-  // --- Contributing factors ----------------------------------------------
+  // --- Contributing factors: only what the root cause does not already say --
   const factors = [];
-  if (bySignal.assumption_capacity_exceeded) {
-    const ev = bySignal.assumption_capacity_exceeded.evidence;
-    factors.push(`${vendorName(ev.teamRef)} carries ${ev.openIssues} open issues across all lots against an assumed ceiling of ${ev.maxOpenIssues}; interventions queue behind preventive work.`);
-  }
-  if (bySignal.assumption_person_unavailable) {
-    const ev = bySignal.assumption_person_unavailable.evidence;
-    factors.push(`${ev.displayName} is ${ev.kind} from ${longDate(ev.startsOn)} to ${longDate(ev.endsOn)}${ev.note ? ` (${ev.note.replace(/\.$/, '')})` : ''} while still holding ${ev.heldIssues?.length ?? 0} open ${scopeLabel}${ev.heldIssues?.length ? ` (${ev.heldIssues.join(', ')})` : ''}.`);
-  }
-  if (bySignal.assumption_dependency_slipping) {
-    const ev = bySignal.assumption_dependency_slipping.evidence;
-    const b = ev.blockedBy?.[0];
-    factors.push(`${ev.issueKey} "${ev.summary}" is due ${longDate(ev.deadline)}${b ? ` and blocked by ${b.key} "${b.summary}", which has had no activity for ${b.idleDays} days` : ''}. Without it, crews lose 1–2 h per site on escorted access.`);
-  }
-  if (bySignal.decision_contradicted) {
-    const ev = bySignal.decision_contradicted.evidence;
-    const d = ev.divergent?.[0];
-    factors.push(`${d?.key} "${d?.summary}" routes ${scopeLabel} to ${vendorName(d?.label)} as a stop-gap, contradicting "${ev.decision}" without the decision being revisited.`);
-  }
   if (trend.openNearSla?.length) {
-    factors.push(`${trend.openNearSla.length} interventions are within an hour of the ${trend.slaHours} h limit right now (${trend.openNearSla.join(', ')}); ${trend.neededOnTimeToRecover} consecutive on-time restorations would be needed to get back above ${pctOf(metric.threshold)}.`);
+    factors.push(`${trend.openNearSla.length} interventions are within an hour of the ${trend.slaHours} h limit (${trend.openNearSla.join(', ')}). ${trend.neededOnTimeToRecover} consecutive on-time restorations would be needed to get back above ${pctOf(metric.threshold)}.`);
+  }
+  if (bySignal.stale_critical_issue) {
+    const ev = bySignal.stale_critical_issue.evidence;
+    factors.push(`${ev.issueKey} "${ev.summary}" has had no activity for ${ev.idleDays} days and is due ${longDate(ev.dueOn)}.`);
   }
   if (bySignal.single_point_of_failure) {
     const ev = bySignal.single_point_of_failure.evidence;
     factors.push(`${personName(ev.personRef)} holds ${ev.openIssues} of the open issues (${Math.round(ev.share * 100)} %).`);
+  }
+  if (!broken.length) {
+    if (bySignal.assumption_capacity_exceeded) { const ev = bySignal.assumption_capacity_exceeded.evidence; factors.push(`${vendorName(ev.teamRef)} carries ${ev.openIssues} open issues against an assumed ceiling of ${ev.maxOpenIssues}.`); }
+    if (bySignal.assumption_person_unavailable) { const ev = bySignal.assumption_person_unavailable.evidence; factors.push(`${ev.displayName} is ${ev.kind} from ${longDate(ev.startsOn)} to ${longDate(ev.endsOn)} while holding ${ev.heldIssues?.length ?? 0} open ${scopeLabel}.`); }
+    if (bySignal.assumption_dependency_slipping) { const ev = bySignal.assumption_dependency_slipping.evidence; const b = ev.blockedBy?.[0]; factors.push(`${ev.issueKey} "${ev.summary}" is due ${longDate(ev.deadline)}${b ? ` and blocked by ${b.key}, idle for ${b.idleDays} days` : ''}.`); }
+    if (bySignal.decision_contradicted) { const ev = bySignal.decision_contradicted.evidence; const d = ev.divergent?.[0]; factors.push(`${d?.key} "${d?.summary}" routes ${scopeLabel} to ${vendorName(d?.label)}, contrary to "${ev.decision}".`); }
   }
 
   // --- Corrective actions ("what would have prevented it") ----------------
   const actions = correctiveActions({ obligation, signals, assumptionResults, scopeLabel });
 
   // --- Evidence -----------------------------------------------------------
-  const evidence = [];
-  if (rootDecision) evidence.push({ label: `Decision ${rootDecision.title}`, url: rootDecision.source_url ? absolute(rootDecision.source_url, siteUrl) : null, type: 'decision' });
-  for (const s of signals) for (const k of issueKeysIn(s.evidence)) evidence.push({ label: k, url: issueUrl(k, siteUrl), type: 'issue' });
-  const seen = new Set();
-  const uniqueEvidence = evidence.filter((e) => (seen.has(e.label) ? false : (seen.add(e.label), true)));
+  const uniqueEvidence = rootDecision ? [{ label: rootDecision.title, url: rootDecision.source_url ? absolute(rootDecision.source_url, siteUrl) : null, type: 'decision' }] : [];
 
   // --- How this was computed ---------------------------------------------
   const method = [
-    `Metric: ${metric.kind.replace(/_/g, ' ')} over ${ymd(metric.window.start)} → ${ymd(metric.window.end)}: ${metric.detail.within ?? metric.current} within SLA of ${metric.detail.resolved ?? '—'} resolved (${pctOf(metric.current)}); ${metric.detail.open ?? 0} open, of which ${metric.detail.openLikelyOk ?? 0} likely on time → projected ${pctOf(metric.projected)}.`,
-    ...(forecast.explanation?.steps ?? []).map((s) => `${s.delta > 0 ? '+' : ''}${s.delta} — ${s.label}`),
-    `Probability = sum of the above, bounded to [0.05, 0.98] = ${forecast.probability}.`,
-    `Cost: ${forecast.explanation?.cost ?? ''}.`,
+    `Period ${ymd(metric.window.start)} to ${ymd(metric.window.end)}: ${metric.detail.within ?? metric.current} of ${metric.detail.resolved ?? '—'} resolved within SLA (${pctOf(metric.current)}); ${metric.detail.open ?? 0} open, ${metric.detail.openLikelyOk ?? 0} likely on time; projected ${pctOf(metric.projected)}.`,
+    ...(forecast.explanation?.steps ?? []).map((s) => `${s.delta > 0 ? '+' : ''}${s.delta} ${s.label.toLowerCase()}`),
+    `Sum, bounded to 0.05–0.98 = ${forecast.probability}. Cost: ${forecast.explanation?.cost ?? ''}.`,
   ];
 
   return {
