@@ -10,6 +10,111 @@ modules:
       title: Antemortem
       layout: native
 
+  # On every issue: which obligations it feeds, which assumptions mention it,
+  # whether it appears in a projected post-mortem.
+  jira:issueContext:
+    - key: antemortem-issue-context
+      resource: issue-context
+      resolver:
+        function: resolver
+      render: native
+      title: Antemortem
+      label: Antemortem
+      description: Obligations, decisions and projected incidents linked to this issue.
+
+  # ---------------------------------------------------------------------------
+  # Rovo — the agent and the actions (also usable as tools by other agents)
+  # ---------------------------------------------------------------------------
+  rovo:agent:
+    - key: antemortem-agent
+      name: Antemortem
+      description: Tells you which post-mortem you will be writing next, why, and what would prevent it.
+      prompt: resource:agent-resource;prompt.txt
+      conversationStarters:
+        - What is my next post-mortem?
+        - Why is O-3 at risk?
+        - How are our obligations doing?
+        - What are the corrective actions right now?
+      actions:
+        - get-next-incident
+        - explain-obligation
+        - list-obligation-status
+        - list-corrective-actions
+        - record-decision
+  action:
+    - key: get-next-incident
+      name: Get next projected incident
+      function: rovo-next-incident
+      actionVerb: GET
+      description: >
+        Returns the next projected incident (a post-mortem written before the incident):
+        date, probability, projected cost, corrective actions and the page link.
+        Use for "what is my next post-mortem", "what's coming", "any incident ahead".
+      inputs: {}
+    - key: explain-obligation
+      name: Explain why an obligation is at risk
+      function: rovo-explain-obligation
+      actionVerb: GET
+      description: >
+        For one contractual obligation (by code, e.g. O-3), returns the forecast, the
+        signals, the decisions it depends on and their assumptions, and how the probability was computed.
+      inputs:
+        obligationCode:
+          title: Obligation code
+          type: string
+          required: true
+          description: The obligation code, such as O-3.
+    - key: list-obligation-status
+      name: List obligations and their breach probability
+      function: rovo-list-obligations
+      actionVerb: GET
+      description: Returns every active obligation with its latest breach probability, projected date and cost.
+      inputs: {}
+    - key: list-corrective-actions
+      name: List corrective actions
+      function: rovo-list-actions
+      actionVerb: GET
+      description: Returns the corrective actions (Jira issues) of open projected incidents and their status. Optionally filtered by obligation code.
+      inputs:
+        obligationCode:
+          title: Obligation code
+          type: string
+          required: false
+          description: Optional obligation code to filter on, such as O-3.
+    - key: record-decision
+      name: Record a decision
+      function: rovo-record-decision
+      actionVerb: CREATE
+      description: >
+        Records a decision and the assumptions it rests on, so Antemortem can watch them.
+        Use when the user states that something was decided.
+      inputs:
+        title:
+          title: Title
+          type: string
+          required: true
+          description: Short title of the decision.
+        statement:
+          title: What was decided
+          type: string
+          required: true
+          description: The decision, in one or two sentences.
+        rationale:
+          title: Why
+          type: string
+          required: false
+          description: The reasoning behind the decision.
+        assumptions:
+          title: Assumptions
+          type: string
+          required: false
+          description: What the decision rests on, one assumption per line.
+        obligationCode:
+          title: Obligation code
+          type: string
+          required: false
+          description: Obligation this decision supports, such as O-3.
+
   # ---------------------------------------------------------------------------
   # Lifecycle — schema is applied at install time, and re-checked hourly
   # ---------------------------------------------------------------------------
@@ -59,16 +164,30 @@ modules:
     - key: jobs
       handler: index.jobsConsumer
       timeoutSeconds: 900
+    - key: rovo-next-incident
+      handler: index.getNextIncident
+    - key: rovo-explain-obligation
+      handler: index.explainObligation
+    - key: rovo-list-obligations
+      handler: index.listObligationStatus
+    - key: rovo-list-actions
+      handler: index.listCorrectiveActions
+    - key: rovo-record-decision
+      handler: index.recordDecision
 
 resources:
   - key: command-center
     path: static/command-center/dist
+  - key: issue-context
+    path: src/frontend/issue-context.jsx
+  - key: agent-resource
+    path: resource/agent
 
 permissions:
   scopes:
     - storage:app
     # Jira — reading the work graph, creating corrective actions, and (demo
-    # loader only) creating/deleting the FIELD project.
+    # loader only) creating/deleting the NFS project.
     - read:jira-work
     - write:jira-work
     - read:jira-user
@@ -79,6 +198,8 @@ permissions:
     - read:page:confluence
     - write:page:confluence
     - write:confluence-space
+    # Rovo — lets customer-built agents call our actions as tools.
+    - read:chat:rovo
 
 app:
   runtime:

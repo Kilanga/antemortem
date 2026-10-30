@@ -267,6 +267,54 @@ resolver.define('dismissIncident', admin(async (req) => {
   return fi ? { ok: true, incident: fi } : { ok: false, error: 'Not found.' };
 }));
 
+// ---------------------------------------------------------------------------
+// Issue context panel
+// ---------------------------------------------------------------------------
+
+resolver.define('getIssueContext', safe(async (req) => {
+  const issueKey = str(req.payload?.issueKey ?? req.context?.extension?.issue?.key, 32);
+  if (!issueKey || !/^[A-Z][A-Z0-9_]+-\d+$/.test(issueKey)) return { ok: false, error: 'No issue key.' };
+  const siteUrl = req.context?.siteUrl ?? '';
+
+  // Obligations whose scope contains this issue (one cheap JQL per obligation).
+  const obls = await obligations.list({ where: "status = 'active' AND jql_scope IS NOT NULL", limit: 50 });
+  const feeds = [];
+  for (const o of obls) {
+    try {
+      const hits = await searchIssues(`key = ${issueKey} AND (${o.jql_scope})`, { fields: ['status'], maxTotal: 1 });
+      if (hits.length) feeds.push(o);
+    } catch { /* invalid JQL on this obligation: skip */ }
+  }
+  const latestForecast = async (oid) => (await query('SELECT probability, projected_breach_date FROM forecast WHERE obligation_id = ? AND superseded_by IS NULL ORDER BY computed_at DESC LIMIT 1', [oid]))[0] ?? null;
+  const obligationsOut = [];
+  for (const o of feeds) {
+    const f = await latestForecast(o.id);
+    obligationsOut.push({ id: o.id, code: o.code, title: o.title, probability: f ? Number(f.probability) : null, breachDate: f?.projected_breach_date ? String(f.projected_breach_date).slice(0, 10) : null });
+  }
+
+  // Assumptions whose params mention the issue, with their decision.
+  const asmRows = await query("SELECT a.id, a.statement, a.status, d.title AS decision_title, d.id AS decision_id FROM assumption a JOIN decision d ON d.id = a.decision_id WHERE a.archived_at IS NULL AND JSON_SEARCH(a.params, 'one', ?) IS NOT NULL", [issueKey]);
+  const assumptionsOut = asmRows.map((r) => ({ id: r.id, statement: r.statement, status: r.status, decisionTitle: r.decision_title }));
+
+  // Decisions contradicted by this issue (routing signals name it in evidence).
+  const sigRows = await query("SELECT subject_id FROM risk_signal WHERE type = 'decision_contradicted' AND resolved_at IS NULL AND JSON_SEARCH(evidence, 'one', ?) IS NOT NULL", [issueKey]);
+  const decisionsOut = [];
+  for (const r of sigRows) {
+    const d = await decisions.get(r.subject_id);
+    if (d) decisionsOut.push({ id: d.id, title: d.title, status: d.status });
+  }
+
+  // Projected incidents that mention the issue (timeline evidence or corrective action).
+  const open = await futureIncidents.list({ where: "status IN ('draft','published')", limit: 20 });
+  const incidentsOut = [];
+  for (const fi of open) {
+    const asAction = (fi.actions?.items ?? []).find((a) => a.issue_key === issueKey);
+    const inTimeline = JSON.stringify(fi.timeline ?? []).includes(issueKey);
+    if (asAction || inTimeline) incidentsOut.push({ id: fi.id, title: fi.title, url: fi.confluence_page_url, incidentDate: String(fi.incident_date).slice(0, 10), probability: fi.actions?.probability ?? null, cost: fi.actions?.cost != null ? new Intl.NumberFormat('en-GB', { style: 'currency', currency: fi.actions.currency ?? 'EUR', maximumFractionDigits: 0 }).format(fi.actions.cost) : '', role: asAction ? 'action' : 'evidence' });
+  }
+  return { ok: true, issueKey, obligations: obligationsOut, assumptions: assumptionsOut, decisions: decisionsOut, incidents: incidentsOut, siteUrl };
+}));
+
 resolver.define('listAvailability', safe(async () => ({ ok: true, availability: await availability.list({ orderBy: 'starts_on DESC' }) })));
 
 // ---------------------------------------------------------------------------
