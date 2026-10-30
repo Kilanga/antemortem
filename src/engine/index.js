@@ -14,7 +14,7 @@ import { obligations, decisions as decisionsRepo, assumptions as assumptionsRepo
 import { getSettings } from '../settings.js';
 import { graphSourceFor } from '../graph/index.js';
 import { analyseObligation } from './analyse.js';
-import { reconcileIncident } from './publish.js';
+import { reconcileIncident, syncActionStatuses } from './publish.js';
 
 export async function runAnalysis({ source = 'manual', now = new Date() } = {}) {
   const startedAt = new Date();
@@ -133,6 +133,7 @@ async function resolveMissingSignals(obligation, decisions, fingerprints, now) {
 export async function actionsSummary(obligationId) {
   const [fi] = await futureIncidents.list({ where: "obligation_id = ? AND status IN ('published','draft','averted')", params: [obligationId], orderBy: 'created_at DESC', limit: 1 });
   if (!fi) return { inProgress: 0, done: 0 };
-  const items = await actionItems.list({ where: 'future_incident_id = ?', params: [fi.id], limit: 50 });
+  // Read the Jira status first: a reopened action must count again.
+  const items = await syncActionStatuses(await actionItems.list({ where: 'future_incident_id = ?', params: [fi.id], limit: 50 }));
   return { inProgress: items.filter((a) => a.status === 'in_progress').length, done: items.filter((a) => a.status === 'done').length };
 }

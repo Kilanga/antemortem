@@ -170,7 +170,7 @@ async function createActionIssues({ incident, doc, projectKey, siteUrl }) {
   return items;
 }
 
-async function syncActionStatuses(items) {
+export async function syncActionStatuses(items) {
   const out = [];
   for (const a of items) {
     if (!a.issue_key) { out.push(a); continue; }
