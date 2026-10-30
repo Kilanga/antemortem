@@ -134,6 +134,12 @@ h1 { font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 
 .timeline li.root .tl-text { font-weight: 600; }
 .tl-date { color: var(--muted); font-size: 12px; }
 .explain { margin-top: 10px; font-family: var(--mono); }
+.portfolio-row { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+.obl-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { font: inherit; font-size: 12px; font-family: var(--mono); padding: 2px 8px; border-radius: 3px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+.chip.ok { border-color: #9fd3b4; color: #1f6b3d; }
+.chip.warn { border-color: #e2c27a; color: #7a5600; }
+.chip.danger { border-color: var(--accent); color: var(--accent); }
 .whatif { margin: 0 8px 0 0; vertical-align: -1px; accent-color: var(--accent); }
 .timeline li.fixed .tl-text { text-decoration: line-through; color: var(--muted); }
 .whatif-result { margin: 10px 0 0; font-family: var(--serif); font-size: 15px; }

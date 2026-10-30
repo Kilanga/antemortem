@@ -5,6 +5,7 @@ import React from 'react';
 export function Shell({ children, toast, tab, onTab, version }) {
   const tabs = [
     ['overview', 'Overview'],
+    ['portfolio', 'Portfolio'],
     ['obligations', 'Obligations'],
     ['decisions', 'Decisions'],
     ['averted', 'Averted'],

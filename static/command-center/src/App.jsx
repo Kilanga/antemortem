@@ -6,6 +6,7 @@ import Obligations from './tabs/Obligations.jsx';
 import Decisions from './tabs/Decisions.jsx';
 import Settings from './tabs/Settings.jsx';
 import Averted from './tabs/Averted.jsx';
+import Portfolio from './tabs/Portfolio.jsx';
 
 export default function App() {
   const [overview, setOverview] = useState(null);
@@ -69,6 +70,7 @@ export default function App() {
   return (
     <Shell tab={tab} onTab={onTab} toast={toast} version={version}>
       {tab === 'overview' && <Overview overview={overview} busy={busy} onRunAnalysis={runAnalysis} onRepair={repair} onTab={onTab} notify={notify} refresh={refresh} />}
+      {tab === 'portfolio' && <Portfolio onTab={onTab} />}
       {tab === 'averted' && <Averted />}
       {tab === 'obligations' && <Obligations notify={notify} />}
       {tab === 'decisions' && <Decisions notify={notify} />}
