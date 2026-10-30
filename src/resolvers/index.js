@@ -10,7 +10,8 @@
  */
 import Resolver from '@forge/resolver';
 import { getSchemaStatus, runMigrations } from '../db/migrate.js';
-import { getSettings, saveSettings } from '../settings.js';
+import { getSettings, saveSettings, ensureWebtriggerToken } from '../settings.js';
+import { webTrigger } from '@forge/api';
 import { dismissIncident } from '../engine/publish.js';
 import { query, parseJson } from '../db/client.js';
 import { currentUserHasPermission, searchIssues } from '../jira/client.js';
@@ -46,7 +47,8 @@ const admin = (fn) => safe(async (req) => {
 resolver.define(
   'getOverview',
   safe(async (req) => {
-    const [schema, settings, demo] = await Promise.all([getSchemaStatus(), getSettings(), getProgress()]);
+    const [schema, settingsFull, demo] = await Promise.all([getSchemaStatus(), getSettings(), getProgress()]);
+    const { webtriggerToken, ...settings } = settingsFull;
     let lastRun = null;
     if (schema.ok) {
       const rows = await query(
@@ -87,8 +89,12 @@ resolver.define('getLastRun', safe(async () => {
   return { ok: true, lastRun: rows[0] ?? null };
 }));
 
-resolver.define('getSettings', safe(async () => ({ ok: true, settings: await getSettings() })));
-resolver.define('saveSettings', admin(async (req) => ({ ok: true, settings: await saveSettings(req.payload ?? {}) })));
+const publicSettings = ({ webtriggerToken, ...rest }) => rest;
+resolver.define('getSettings', safe(async () => ({ ok: true, settings: publicSettings(await getSettings()) })));
+resolver.define('saveSettings', admin(async (req) => {
+  const { webtriggerToken, ...patch } = req.payload ?? {};
+  return { ok: true, settings: publicSettings(await saveSettings(patch)) };
+}));
 
 // ---------------------------------------------------------------------------
 // Demo scenario (async job + polling)
@@ -106,6 +112,14 @@ resolver.define('resetDemo', admin(async () => {
   if (progress.status === 'running' || progress.status === 'resetting') return { ok: false, error: 'A demo job is already running.' };
   await jobsQueue.push({ body: { job: 'reset-demo' } });
   return { ok: true, queued: true };
+}));
+
+/** Webtrigger URL + token for scripted runs (admin only; shown in Settings). */
+resolver.define('getWebtrigger', admin(async () => {
+  const token = await ensureWebtriggerToken();
+  let url = null;
+  try { url = await webTrigger.getUrl('antemortem-run-analysis'); } catch (err) { return { ok: false, error: String(err?.message ?? err) }; }
+  return { ok: true, url, token, example: `curl -X POST -H "X-Antemortem-Token: ${token}" "${url}"` };
 }));
 
 resolver.define('getDemoProgress', safe(async () => ({ ok: true, progress: await getProgress() })));

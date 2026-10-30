@@ -11,4 +11,5 @@ Tout ce qui n'est pas dans BUILD.md va ici. On n'en parle pas avant la semaine 6
 - `rovo:mcp` : exposer les actions comme outils MCP
 - Option LLM pour reformuler le résumé (§6.5)
 - Marketplace listing
-- Webtrigger : jeton partagé pour « Run analysis now » (prévu semaine 7, pas une idée nouvelle — rappel)
+- Mettre à jour la description des tickets d'actions correctives avec le lien de la page une fois celle-ci créée (aujourd'hui les tickets sont créés avant la page)
+- Panneau de ticket : afficher aussi les incidents évités où le ticket apparaît

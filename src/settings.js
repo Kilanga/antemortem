@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS = {
   // Set by the demo loader so Reset knows what to clean.
   demoLoaded: false,
   demoLoadedAt: null,
+  // Shared secret for the "Run analysis now" webtrigger (generated on first use).
+  webtriggerToken: null,
 };
 
 export async function getSettings() {
@@ -44,6 +46,7 @@ function sanitize(patch) {
       v = Math.min(0.98, Math.max(0.05, v));
     }
     if (key === 'graphSource' && !['rest', 'twg', 'auto'].includes(v)) continue;
+    if (key === 'webtriggerToken' && v !== null && !/^[A-Za-z0-9_-]{16,128}$/.test(String(v))) continue;
     if ((key === 'confluenceSpaceKey' || key === 'actionsProjectKey') && v !== null) {
       v = String(v).trim().toUpperCase();
       if (!/^[A-Z][A-Z0-9_]{0,31}$/.test(v)) continue;
@@ -51,4 +54,14 @@ function sanitize(patch) {
     out[key] = v;
   }
   return out;
+}
+
+/** Returns the webtrigger token, generating one the first time. */
+export async function ensureWebtriggerToken() {
+  const s = await getSettings();
+  if (s.webtriggerToken) return s.webtriggerToken;
+  const { randomBytes } = await import('node:crypto');
+  const token = randomBytes(24).toString('base64url');
+  await saveSettings({ webtriggerToken: token });
+  return token;
 }

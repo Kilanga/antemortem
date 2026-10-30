@@ -39,4 +39,5 @@ export const api = {
   getLastRun: () => call('getLastRun'),
   listIncidents: () => call('listIncidents'),
   dismissIncident: (id, reason) => call('dismissIncident', { id, reason }),
+  getWebtrigger: () => call('getWebtrigger'),
 };

@@ -17,6 +17,8 @@ export default function Settings({ overview, notify, onChanged }) {
   // Poll while a demo job runs.
   useEffect(() => {
     const active = progress.status === 'running' || progress.status === 'resetting';
+  const [hook, setHook] = useState(null);
+  const revealHook = async () => { const r = await api.getWebtrigger(); setHook(r.ok ? r : { error: r.error }); };
     if (active && !timer.current) {
       timer.current = setInterval(async () => {
         const r = await api.getDemoProgress();
@@ -58,6 +60,8 @@ export default function Settings({ overview, notify, onChanged }) {
   };
 
   const active = progress.status === 'running' || progress.status === 'resetting';
+  const [hook, setHook] = useState(null);
+  const revealHook = async () => { const r = await api.getWebtrigger(); setHook(r.ok ? r : { error: r.error }); };
 
   return (
     <>
@@ -123,6 +127,11 @@ export default function Settings({ overview, notify, onChanged }) {
             <Field label="Graph source" hint="Teamwork Graph needs the EAP scope; falls back to REST"><select value={form.graphSource} onChange={(e) => setForm({ ...form, graphSource: e.target.value })}><option value="rest">Jira & Confluence REST</option><option value="auto">Auto (Teamwork Graph when available)</option><option value="twg">Teamwork Graph</option></select></Field>
             <div className="actions left"><button className="btn" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button></div>
           </form>
+        </Card>
+
+        <Card title="Automation hook">
+          <p className="hint">Trigger an analysis from a script, a CI job or an Automation rule: POST to the URL below with the token in the <code>X-Antemortem-Token</code> header. The analysis also runs every hour on its own.</p>
+          {hook ? (hook.error ? <Callout kind="warn">{hook.error}</Callout> : <pre>{hook.example}</pre>) : <div className="actions left"><button className="btn subtle" type="button" onClick={revealHook}>Reveal URL and token</button></div>}
         </Card>
       </section>
     </>
