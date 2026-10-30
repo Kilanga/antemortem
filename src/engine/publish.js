@@ -26,7 +26,7 @@ export async function reconcileIncident({ result, settings, now }) {
   const { obligation, forecast, metric, chain, directSignals, assumptionSignals, assumptionResults } = result;
   const decisions = result.decisions ?? [];
   const threshold = Number(settings.publishThreshold ?? 0.6);
-  const [existing] = await futureIncidents.list({ where: "obligation_id = ? AND status IN ('draft','published')", params: [obligation.id], limit: 1 });
+  let [existing] = await futureIncidents.list({ where: "obligation_id = ? AND status IN ('draft','published')", params: [obligation.id], limit: 1 });
   const breaching = !forecast.healthy && forecast.probability >= threshold;
 
   if (!breaching && !existing) return { action: 'none' };
@@ -35,6 +35,14 @@ export async function reconcileIncident({ result, settings, now }) {
   const contract = obligation.contract_id ? await contracts.get(obligation.contract_id) : null;
   const signals = [...directSignals, ...assumptionSignals];
   const doc = composeIncident({ obligation, contract, decisions, metric, signals, assumptionResults, forecast, chain, now, siteUrl });
+
+  // The incident comes back (an action reopened, the facts changed again):
+  // the averted page of the same period is reinstated rather than duplicated.
+  let reinstated = false;
+  if (breaching && !existing) {
+    const [averted] = await futureIncidents.list({ where: "obligation_id = ? AND status = 'averted' AND incident_date = ?", params: [obligation.id, doc.incidentDate], limit: 1 });
+    if (averted) { existing = averted; reinstated = true; }
+  }
 
   if (breaching) {
     const incident = existing ?? (await futureIncidents.create({
@@ -45,8 +53,8 @@ export async function reconcileIncident({ result, settings, now }) {
       status: 'draft',
       summary: doc.summary,
     }));
-    await publish({ incident, doc, forecastId: result.forecastId, settings, siteUrl, now });
-    return { action: existing ? 'updated' : 'published', incidentId: incident.id };
+    await publish({ incident, doc, forecastId: result.forecastId, settings, siteUrl, now, reinstated });
+    return { action: reinstated ? 'reinstated' : existing ? 'updated' : 'published', incidentId: incident.id };
   }
 
   // Below threshold with an open incident: averted (actions done, or the facts changed).
@@ -61,7 +69,7 @@ export async function reconcileIncident({ result, settings, now }) {
 
 // ---------------------------------------------------------------------------
 
-async function publish({ incident, doc, forecastId, settings, siteUrl, now }) {
+async function publish({ incident, doc, forecastId, settings, siteUrl, now, reinstated = false }) {
   const errors = [];
   let items = await actionItems.list({ where: 'future_incident_id = ?', params: [incident.id], limit: 50 });
 
@@ -92,7 +100,8 @@ async function publish({ incident, doc, forecastId, settings, siteUrl, now }) {
         pageUrl = confluence.pageUrl(page.webui, siteUrl);
       } else {
         const current = await confluence.getPage(pageId);
-        const page = await confluence.updatePage({ id: pageId, title: doc.title, storageBody: body, version: current.version, parentId: current.parentId });
+        const parent = reinstated ? await ensureParent(settings.confluenceSpaceKey, 'projected') : null;
+        const page = await confluence.updatePage({ id: pageId, title: doc.title, storageBody: body, version: current.version, parentId: parent?.id ?? current.parentId });
         version = page.version;
         pageUrl = confluence.pageUrl(page.webui, siteUrl) ?? pageUrl;
       }
@@ -109,6 +118,8 @@ async function publish({ incident, doc, forecastId, settings, siteUrl, now }) {
     confluence_page_id: pageId,
     confluence_page_url: pageUrl,
     version,
+    averted_at: null,
+    cost_avoided: null,
     summary: doc.summary,
     impact_statement: doc.sections.impact.join(' '),
     root_cause: doc.sections.rootCause.join('\n'),
