@@ -325,9 +325,7 @@ resolver.define('getMacroSummary', safe(async () => {
     return { id: fi.id, obligationId: fi.obligation_id, title: fi.title, incidentDate: String(fi.incident_date).slice(0, 10), probability: Number(f?.probability ?? a.probability ?? 0), cost: Number(f?.projected_cost ?? a.cost ?? 0), currency: a.currency ?? f?.currency ?? 'EUR', url: fi.confluence_page_url ?? null };
   });
   const totalCost = incidents.reduce((n, fi) => n + fi.cost, 0);
-  let commandCenterUrl = null;
-  try { const { getSiteUrl } = await import('../engine/publish.js'); const site = await getSiteUrl(); if (site) commandCenterUrl = `${site}/jira/apps`; } catch { /* optional */ }
-  return { ok: true, incidents, atRisk, totalCost, currency: incidents[0]?.currency ?? atRisk[0]?.currency ?? 'EUR', commandCenterUrl };
+  return { ok: true, incidents, atRisk, totalCost, currency: incidents[0]?.currency ?? atRisk[0]?.currency ?? 'EUR', commandCenterUrl: null };
 }));
 
 resolver.define('dismissIncident', admin(async (req) => {
