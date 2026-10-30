@@ -366,6 +366,8 @@ Le même scénario sert aux tests automatisés du moteur (snapshot du post-morte
 
 ## 9. Plan sur 8 semaines (29 oct → 22 déc)
 
+**État au 30 oct** : semaines 1–3 livrées et vérifiées sur site ; semaines 4–7 livrées dans le dépôt (narratif, publication, cycle de vie, agent Rovo, panneau, durcissement, instructions juges, script vidéo, passage design) **en attente de déploiement et de vérification**. Reste : vérification 4–5, test juge sur le site vierge, vidéo, soumission.
+
 Chaque semaine se termine par : déploiement sur le site de dev, **installation depuis zéro sur le site vierge**, et une courte note dans `CHANGELOG.md`. Règle : à tout moment, `main` doit produire une app installable qui fait *quelque chose* de montrable.
 
 | Sem. | Dates | Objectif | Livrable vérifiable |
