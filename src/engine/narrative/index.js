@@ -65,16 +65,16 @@ export function composeIncident({ obligation, contract, decisions, metric, signa
     const limit = trend.slaHours ? `the ${trend.slaHours} h limit` : `the "${trend.slaName}" goal`;
     factors.push(`${n} intervention${n === 1 ? ' is' : 's are'} close to ${limit} (${trend.openNearSla.join(', ')}). ${trend.neededOnTimeToRecover} consecutive on-time restorations would be needed to get back above ${pctOf(metric.threshold)}.`);
   }
-  if (bySignal.stale_critical_issue) {
-    const ev = bySignal.stale_critical_issue.evidence;
+  for (const s of signals.filter((x) => x.type === 'stale_critical_issue')) {
+    const ev = s.evidence;
     factors.push(`${ev.issueKey} "${ev.summary}" has had no activity for ${ev.idleDays} days and is due ${longDate(ev.dueOn)}.`);
   }
-  if (bySignal.person_silent) {
-    const ev = bySignal.person_silent.evidence;
+  for (const s of signals.filter((x) => x.type === 'person_silent')) {
+    const ev = s.evidence;
     factors.push(`${personName(ev.personRef)} holds ${ev.heldIssues.length} open issues with no activity for ${ev.idleDays} days.`);
   }
-  if (bySignal.single_point_of_failure) {
-    const ev = bySignal.single_point_of_failure.evidence;
+  for (const s of signals.filter((x) => x.type === 'single_point_of_failure')) {
+    const ev = s.evidence;
     factors.push(`${personName(ev.personRef)} holds ${ev.openIssues} of the open issues (${Math.round(ev.share * 100)} %).`);
   }
   if (!broken.length) {

@@ -89,6 +89,8 @@ resolver.define('runAnalysisNow', admin(async () => {
 }));
 
 /** Latest analysis run — polled by the UI after "Run analysis now". */
+resolver.define('countOpenSignals', safe(async () => ({ ok: true, n: Number((await query("SELECT COUNT(*) AS n FROM risk_signal WHERE resolved_at IS NULL AND archived_at IS NULL"))[0]?.n ?? 0) })));
+
 resolver.define('getLastRun', safe(async () => {
   const rows = await query('SELECT id, trigger_source, started_at, finished_at, status, summary, error FROM analysis_run ORDER BY started_at DESC LIMIT 1');
   return { ok: true, lastRun: rows[0] ?? null };
@@ -158,8 +160,8 @@ resolver.define('saveObligation', admin(async (req) => {
     sla_hours: num(p.sla_hours),
     threshold: num(p.threshold),
     period: ['monthly', 'weekly', 'one_shot', 'custom'].includes(p.period) ? p.period : 'monthly',
-    period_starts_on: dateOrNull(p.period_starts_on),
-    period_ends_on: dateOrNull(p.period_ends_on),
+    period_starts_on: p.period === 'custom' ? dateOrNull(p.period_starts_on) : null,
+    period_ends_on: p.period === 'custom' ? dateOrNull(p.period_ends_on) : null,
     penalty_type: ['fixed', 'percent_of_invoice'].includes(p.penalty_type) ? p.penalty_type : null,
     penalty_value: num(p.penalty_value),
     invoice_basis: num(p.invoice_basis),
@@ -251,7 +253,7 @@ resolver.define('listForecasts', safe(async () => {
     if (latest.has(r.obligation_id)) continue;
     const f = hydrate('forecast', r);
     // `healthy` is derived, not stored: no scoring step means nothing was found.
-    f.healthy = !(f.explanation?.steps?.length) && Number(f.probability) <= 0.05;
+    f.healthy = !(f.explanation?.steps ?? []).some((s) => s.delta > 0) && Number(f.probability) <= 0.05;
     latest.set(r.obligation_id, f);
   }
   const openSignals = await query('SELECT type, severity, subject_type, subject_id, fingerprint, detected_at, evidence FROM risk_signal WHERE resolved_at IS NULL AND archived_at IS NULL ORDER BY severity DESC LIMIT 500');

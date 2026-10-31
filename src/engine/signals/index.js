@@ -15,6 +15,9 @@
  */
 
 const H = 3600_000;
+/** Short stable hash so fingerprints stay under the column width whatever the key list. */
+const shortHash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16).padStart(8, '0'); };
+
 const D = 24 * H;
 const iso = (d) => (d instanceof Date ? d.toISOString() : d);
 const ymd = (d) => iso(d)?.slice(0, 10);
@@ -168,7 +171,7 @@ export async function checkAssumption({ assumption, decision, obligation, graph,
         return {
           status: 'broken',
           evidence: { ...common, expected: p.expected, divergent: divergent.map((i) => ({ key: i.key, summary: i.summary, label: i.labels.find((l) => l.startsWith(p.labelPrefix) && l !== p.expected), since: ymd(i.startedAt) })) },
-          signals: [{ ...base, type: 'decision_contradicted', severity: 4, subject_type: 'decision', subject_id: decision?.id ?? assumption.decision_id, fingerprint: `decision_contradicted:${assumption.id}:${divergent.map((i) => i.key).sort().join(',')}`, evidence: { ...common, expected: p.expected, divergent: divergent.map((i) => ({ key: i.key, summary: i.summary, label: i.labels.find((l) => l.startsWith(p.labelPrefix) && l !== p.expected), since: ymd(i.startedAt) })) } }],
+          signals: [{ ...base, type: 'decision_contradicted', severity: 4, subject_type: 'decision', subject_id: decision?.id ?? assumption.decision_id, fingerprint: `decision_contradicted:${assumption.id}:${shortHash(divergent.map((i) => i.key).sort().join(','))}`, evidence: { ...common, expected: p.expected, divergent: divergent.map((i) => ({ key: i.key, summary: i.summary, label: i.labels.find((l) => l.startsWith(p.labelPrefix) && l !== p.expected), since: ymd(i.startedAt) })) } }],
         };
       }
 

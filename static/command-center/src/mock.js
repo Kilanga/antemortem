@@ -79,6 +79,7 @@ const responses = {
     { id: 'd6', title: 'D-6 · Lot 2 repeat-fault programme', statement: 'Repeat faults on lot 2 are root-caused weekly with the equipment vendor until the rate stays under 3 % for two consecutive months.', decided_at: dt(-78), status: 'active', supports: [{ id: 'o2', code: 'O-2' }], assumptions: [{ id: 'f', statement: 'Equipment vendor attends the weekly review.', kind: 'freeform', status: 'holding' }] },
   ] },
   getLastRun: { ok: true, lastRun: overview.lastRun },
+  countOpenSignals: { ok: true, n: 5 },
   getDemoProgress: { ok: true, progress: overview.demo },
   getSettings: { ok: true, settings: overview.settings },
   saveSettings: { ok: true, settings: overview.settings },

@@ -29,7 +29,28 @@ export async function reconcileIncident({ result, settings, now }) {
   let [existing] = await futureIncidents.list({ where: "obligation_id = ? AND status IN ('draft','published')", params: [obligation.id], limit: 1 });
   const breaching = !forecast.healthy && forecast.probability >= threshold;
 
+  // A dismissed incident stays dismissed for its period ("penalty waived"):
+  // the engine must not republish it every hour.
+  if (breaching && !existing) {
+    const [dismissed] = await futureIncidents.list({ where: "obligation_id = ? AND status = 'dismissed' AND incident_date = ?", params: [obligation.id, forecast.projected_breach_date], limit: 1 });
+    if (dismissed) return { action: 'dismissed', incidentId: dismissed.id };
+  }
+
   if (!breaching && !existing) return { action: 'none' };
+
+  // The projected date has passed with an open incident: it materialized if
+  // the last forecast before the date still said so, or if the period closed
+  // under the bar. Today's probability (often computed on the next, empty
+  // period) says nothing about what happened.
+  if (existing && existing.incident_date && new Date(`${String(existing.incident_date).slice(0, 10)}T23:59:59Z`) < now) {
+    const siteUrl0 = await getSiteUrl();
+    const contract0 = obligation.contract_id ? await contracts.get(obligation.contract_id) : null;
+    const doc0 = composeIncident({ obligation, contract: contract0, decisions, metric, signals: [...directSignals, ...assumptionSignals], assumptionResults, forecast, chain, now, siteUrl: siteUrl0 });
+    const lastBefore = Number(existing.actions?.probability ?? 0);
+    const happened = !metric.holds || lastBefore >= threshold;
+    await setStatus(existing, happened ? 'materialized' : 'averted', { doc: doc0, settings, siteUrl: siteUrl0, now, costAvoided: happened ? null : (existing.actions?.cost ?? doc0.cost) });
+    return { action: happened ? 'materialized' : 'averted', incidentId: existing.id };
+  }
 
   const siteUrl = await getSiteUrl();
   const contract = obligation.contract_id ? await contracts.get(obligation.contract_id) : null;
@@ -57,12 +78,7 @@ export async function reconcileIncident({ result, settings, now }) {
     return { action: reinstated ? 'reinstated' : existing ? 'updated' : 'published', incidentId: incident.id };
   }
 
-  // Below threshold with an open incident: averted (actions done, or the facts changed).
-  const materialized = existing.incident_date && new Date(`${String(existing.incident_date).slice(0, 10)}T23:59:59Z`) < now && !metric.holds;
-  if (materialized) {
-    await setStatus(existing, 'materialized', { doc, settings, siteUrl, now });
-    return { action: 'materialized', incidentId: existing.id };
-  }
+  // Below threshold before the date, with an open incident: averted (actions done, or the facts changed).
   await setStatus(existing, 'averted', { doc, settings, siteUrl, now, costAvoided: existing.actions?.cost ?? forecast.projected_cost ?? doc.cost });
   return { action: 'averted', incidentId: existing.id };
 }
@@ -94,7 +110,11 @@ async function publish({ incident, doc, forecastId, settings, siteUrl, now, rein
       const body = renderStorage(doc, { status: 'published', actionItems: itemsWithUrl });
       if (!pageId) {
         const parent = await ensureParent(settings.confluenceSpaceKey, 'projected');
-        const page = await confluence.createPage({ spaceId: parent.spaceId, parentId: parent.id, title: doc.title, storageBody: body });
+        // A page with this title may already exist (a run cut short after createPage): adopt it.
+        const [orphan] = await confluence.findPagesByTitle(parent.spaceId, doc.title);
+        const page = orphan
+          ? await confluence.updatePage({ id: orphan.id, title: doc.title, storageBody: body, version: (await confluence.getPage(orphan.id)).version, parentId: parent.id })
+          : await confluence.createPage({ spaceId: parent.spaceId, parentId: parent.id, title: doc.title, storageBody: body });
         pageId = page.id;
         version = page.version;
         pageUrl = confluence.pageUrl(page.webui, siteUrl);
@@ -206,7 +226,7 @@ async function ensureParent(spaceKey, kind) {
   if (cache[kind]) {
     try {
       const page = await confluence.getPage(cache[kind]);
-      if (page) return { id: page.id, spaceId: space.id };
+      if (page && page.spaceId === space.id) return { id: page.id, spaceId: space.id };
     } catch { /* recreate below */ }
   }
   const page = await confluence.createPage({

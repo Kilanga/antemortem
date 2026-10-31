@@ -79,7 +79,9 @@ export function normalise(issue) {
     vendor: vendorOf(labels),
     startedAt: toDate(hasProp && prop.startedAt ? prop.startedAt : f.created),
     dueAt: toDate(hasProp && prop.dueAt ? prop.dueAt : f.duedate),
-    resolvedAt: toDate(hasProp && prop.resolvedAt !== undefined ? prop.resolvedAt : f.resolutiondate),
+    // The property's resolvedAt wins while it is set; once Jira itself says
+    // the issue is resolved (a judge moved a demo issue to Done), Jira wins.
+    resolvedAt: toDate(hasProp && prop.resolvedAt ? prop.resolvedAt : f.resolutiondate),
     lastActivityAt: toDate(hasProp && prop.lastActivityAt ? prop.lastActivityAt : f.updated),
     blockedBy,
     blocks,

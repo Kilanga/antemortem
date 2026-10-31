@@ -49,6 +49,7 @@ export const api = {
   listAvailability: () => call('listAvailability'),
   listForecasts: () => call('listForecasts'),
   getLastRun: () => call('getLastRun'),
+  countOpenSignals: () => call('countOpenSignals'),
   listIncidents: () => call('listIncidents'),
   dismissIncident: (id, reason) => call('dismissIncident', { id, reason }),
   getWebtrigger: () => call('getWebtrigger'),

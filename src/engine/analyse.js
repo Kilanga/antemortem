@@ -45,7 +45,8 @@ export async function analyseObligation({ obligation, decisions, graph, now = ne
     const ignore = new Set(whatIf.ignore);
     directSignals = directSignals.filter((s) => !ignore.has(s.fingerprint));
     assumptionSignals = assumptionSignals.filter((s) => !ignore.has(s.fingerprint));
-    assumptionResults = assumptionResults.map((r) => (r.status !== 'holding' && !assumptionSignals.some((s) => s.fingerprint.includes(`:${r.assumptionId}`)) ? { ...r, status: 'holding', evidence: { ...r.evidence, whatIf: true } } : r));
+    const ignoredAssumptions = new Set([...ignore].flatMap((fp) => assumptionResults.filter((r) => fp.includes(`:${r.assumptionId}`)).map((r) => r.assumptionId)));
+    assumptionResults = assumptionResults.map((r) => (ignoredAssumptions.has(r.assumptionId) && !assumptionSignals.some((s) => s.fingerprint.includes(`:${r.assumptionId}`)) ? { ...r, status: 'holding', evidence: { ...r.evidence, whatIf: true } } : r));
   }
   const contradictions = assumptionSignals.filter((s) => s.type === 'decision_contradicted');
 

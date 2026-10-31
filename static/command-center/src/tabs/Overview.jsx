@@ -13,10 +13,12 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
   const [forecasts, setForecasts] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [health, setHealth] = useState(false);
+  const [openSignals, setOpenSignals] = useState(null);
 
   useEffect(() => {
     api.listForecasts().then((r) => setForecasts(r.ok ? r.forecasts : []));
     api.listIncidents().then((r) => setIncidents(r.ok ? r.open : []));
+    api.countOpenSignals().then((r) => setOpenSignals(r.ok ? r.n : null));
   }, [lastRun?.id, counts.forecast, counts.future_incident]);
 
   const configured = Boolean(settings.confluenceSpaceKey && settings.actionsProjectKey);
@@ -108,7 +110,7 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
               <dt>Decisions</dt><dd>{counts.decision ?? 0}</dd>
               <dt>Assumptions</dt><dd>{counts.assumption ?? 0}</dd>
               <dt>Links</dt><dd>{counts.link ?? 0}</dd>
-              <dt>Open signals</dt><dd>{counts.risk_signal ?? 0}</dd>
+              <dt>Open signals</dt><dd>{openSignals ?? counts.risk_signal ?? 0}</dd>
             </dl>
           </Card>
         </section>

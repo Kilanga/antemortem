@@ -322,6 +322,7 @@ export async function resetDemo() {
       report.push(`space ${DEMO.spaceKey} deletion queued`);
     }
     await kvs.delete(STATE_KEY);
+    await kvs.delete(`confluence.parents.${DEMO.spaceKey}`); // the parent pages went with the space
     await saveSettings({ demoLoaded: false, demoLoadedAt: null });
     await setProgress({ status: 'idle', steps: [], error: null, lastReset: new Date().toISOString(), report });
     return { ok: true, report };

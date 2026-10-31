@@ -184,8 +184,10 @@ function deadlineMetric(o, issues, win, now) {
     projectedHolds: overdue.length === 0 && dueSoon.every((i) => now - i.lastActivityAt <= 5 * 24 * H),
     margin: -overdue.length,
     window: win,
-    detail: { pending: pending.map((i) => i.key), overdue: overdue.map((i) => i.key), dueSoon: dueSoon.map((i) => i.key) },
+    detail: { pending: pending.map((i) => i.key), overdue: overdue.map((i) => i.key), dueSoon: dueSoon.map((i) => i.key), dueOn: earliest([...overdue, ...dueSoon].map((i) => i.dueAt)) },
   };
 }
+
+const earliest = (dates) => { const d = dates.filter(Boolean).sort((a, b) => a - b)[0]; return d ? d.toISOString().slice(0, 10) : null; };
 
 export const round = (v, dp = 3) => (v == null ? null : Math.round(v * 10 ** dp) / 10 ** dp);
