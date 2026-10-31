@@ -311,6 +311,30 @@ resolver.define('listIncidents', safe(async () => {
   return { ok: true, open: open.map(decorate), averted: averted.map(decorate), costAvoided: averted.filter((f) => f.status === 'averted').reduce((n, f) => n + Number(f.cost_avoided ?? 0), 0) };
 }));
 
+/** The dashboard gadget: next incident, obligations at risk, exposure. Same installation as the command center, so the database is at hand. */
+resolver.define('getGadgetSummary', safe(async () => {
+  const obls = await listObligationsWithContract({ where: "status = 'active'", orderBy: 'code ASC' });
+  const rows = await query('SELECT * FROM forecast WHERE superseded_by IS NULL AND archived_at IS NULL ORDER BY computed_at DESC LIMIT 500');
+  const latest = new Map();
+  for (const r of rows) if (!latest.has(r.obligation_id)) latest.set(r.obligation_id, hydrate('forecast', r));
+  const scored = obls.map((o) => ({ o, f: latest.get(o.id) })).filter(({ f }) => f);
+  const atRisk = scored.filter(({ f }) => f.explanation?.steps?.length && Number(f.probability) > 0.05)
+    .map(({ o, f }) => ({ code: o.code, title: o.title, probability: Number(f.probability), cost: Number(f.projected_cost ?? 0), currency: f.currency ?? o.contract?.currency ?? 'EUR', breach: String(f.projected_breach_date).slice(0, 10) }))
+    .sort((a, b) => b.probability - a.probability);
+  const [fi] = await futureIncidents.list({ where: "status IN ('draft','published')", orderBy: 'incident_date ASC', limit: 1 });
+  const top = atRisk[0];
+  const next = fi || (top && top.probability >= 0.6) ? {
+    title: fi?.title ?? `${top.code} — ${top.title}`,
+    probability: fi ? (latest.get(fi.obligation_id)?.probability ?? fi.actions?.probability ?? 0) : top.probability,
+    cost: fi ? (latest.get(fi.obligation_id)?.projected_cost ?? fi.actions?.cost ?? 0) : top.cost,
+    currency: fi?.actions?.currency ?? top?.currency ?? 'EUR',
+    daysTo: Math.max(0, Math.ceil((new Date(String(fi?.incident_date ?? top.breach).slice(0, 10)) - Date.now()) / 86400_000)),
+    url: fi?.confluence_page_url ?? null,
+  } : null;
+  const analysed = scored.map(({ f }) => String(f.computed_at)).sort().pop();
+  return { ok: true, next, atRisk: atRisk.filter((o) => !fi || o.code !== obls.find((x) => x.id === fi.obligation_id)?.code).slice(0, 5), holding: scored.length - atRisk.length, exposure: atRisk.reduce((n, o) => n + o.cost, 0), currency: atRisk[0]?.currency ?? 'EUR', analysedAt: analysed ? analysed.slice(0, 16).replace('T', ' ') : null };
+}));
+
 /**
  * One block for the Confluence macro. Forge SQL is provisioned per
  * installation, so the Confluence side cannot read the Jira side's tables:

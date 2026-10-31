@@ -21,6 +21,15 @@ modules:
       title: Antemortem — projected incidents
       description: The post-mortems Antemortem has written for incidents that have not happened yet.
       layout: block
+  jira:dashboardGadget:
+    - key: antemortem-gadget
+      resource: gadget
+      resolver:
+        function: resolver
+      render: native
+      title: Antemortem — next post-mortem
+      description: The next projected incident, the obligations at risk and the penalties exposed.
+      thumbnail: https://raw.githubusercontent.com/Kilanga/antemortem/main/assets/gadget.png
   jira:issueContext:
     - key: antemortem-issue-context
       resource: issue-context
@@ -307,6 +316,8 @@ resources:
     path: src/frontend/issue-context.jsx
   - key: macro
     path: src/frontend/macro.jsx
+  - key: gadget
+    path: src/frontend/gadget.jsx
   - key: agent-resource
     path: resource/agent
 
