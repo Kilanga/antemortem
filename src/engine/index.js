@@ -12,11 +12,16 @@
 import { insert, updateById, query, execute, toSqlDateTime } from '../db/client.js';
 import { obligations, decisions as decisionsRepo, assumptions as assumptionsRepo, signals as signalsRepo, forecasts as forecastsRepo, actionItems, futureIncidents } from '../db/repo/index.js';
 import { getSettings } from '../settings.js';
+import { getProgress } from '../demo/seed.js';
 import { graphSourceFor } from '../graph/index.js';
 import { analyseObligation } from './analyse.js';
 import { reconcileIncident, syncActionStatuses } from './publish.js';
 
 export async function runAnalysis({ source = 'manual', now = new Date() } = {}) {
+  // Never analyse a model that is being built or torn down: a run queued
+  // while the demo loads or resets would publish from half-deleted rows.
+  const demo = await getProgress();
+  if (demo.status === 'running' || demo.status === 'resetting') return { ok: false, skipped: true, error: `demo ${demo.status}; analysis skipped` };
   const startedAt = new Date();
   const runId = await insert('analysis_run', { trigger_source: source, started_at: startedAt, status: 'running' });
 

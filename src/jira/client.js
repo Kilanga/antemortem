@@ -32,7 +32,11 @@ async function call(method, r, body, { okStatuses = [200, 201, 204] } = {}) {
 
 function summarizeError(json) {
   if (!json) return '';
-  const msgs = [...(json.errorMessages ?? []), ...Object.entries(json.errors ?? {}).map(([k, v]) => `${k}: ${v}`)];
+  if (Array.isArray(json)) return json.map(summarizeError).filter(Boolean).join(' | ');
+  const nested = json.elementErrors ?? json.errors;
+  const msgs = [...(json.errorMessages ?? []), ...Object.entries(nested && !Array.isArray(nested) ? nested : {}).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : summarizeError(v) || JSON.stringify(v).slice(0, 120)}`)];
+  if (Array.isArray(json.errors)) msgs.push(...json.errors.map(summarizeError));
+  if (json.status && !msgs.length) msgs.push(`status ${json.status}`);
   return msgs.join('; ');
 }
 

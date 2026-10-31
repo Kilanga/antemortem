@@ -302,6 +302,13 @@ async function deleteModelRows(state) {
   }
   for (const vid of m.availabilityIds ?? []) await availability.hardDelete(vid);
   if (m.contractId) await contracts.hardDelete(m.contractId);
+  // Orphans from runs that overlapped an earlier reset: anything whose obligation no longer exists.
+  await execute('DELETE FROM action_item WHERE future_incident_id IN (SELECT id FROM future_incident WHERE obligation_id NOT IN (SELECT id FROM obligation))');
+  await execute('DELETE FROM future_incident WHERE obligation_id NOT IN (SELECT id FROM obligation)');
+  await execute('DELETE FROM forecast WHERE obligation_id NOT IN (SELECT id FROM obligation)');
+  await execute("DELETE FROM risk_signal WHERE subject_type = 'obligation' AND subject_id NOT IN (SELECT id FROM obligation)");
+  await execute("DELETE FROM risk_signal WHERE subject_type = 'decision' AND subject_id NOT IN (SELECT id FROM decision)");
+  await execute("DELETE FROM risk_signal WHERE subject_type = 'assumption' AND subject_id NOT IN (SELECT id FROM assumption)");
   state.model = {};
 }
 

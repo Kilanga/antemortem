@@ -312,7 +312,8 @@ resolver.define('listIncidents', safe(async () => {
   const obls = await obligations.list({ limit: 500, includeArchived: true });
   const codeById = new Map(obls.map((o) => [o.id, { code: o.code, title: o.title }]));
   const decorate = (fi) => ({ ...fi, obligation: codeById.get(fi.obligation_id) ?? null });
-  return { ok: true, open: open.map(decorate), averted: averted.map(decorate), costAvoided: averted.filter((f) => f.status === 'averted').reduce((n, f) => n + Number(f.cost_avoided ?? 0), 0) };
+  const alive = (fi) => codeById.has(fi.obligation_id); // an incident whose obligation is gone is noise
+  return { ok: true, open: open.filter(alive).map(decorate), averted: averted.filter(alive).map(decorate), costAvoided: averted.filter((f) => f.status === 'averted').reduce((n, f) => n + Number(f.cost_avoided ?? 0), 0) };
 }));
 
 /** The dashboard gadget: next incident, obligations at risk, exposure. Same installation as the command center, so the database is at hand. */
