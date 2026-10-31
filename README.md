@@ -85,6 +85,17 @@ flowchart LR
 
 **Constraints that shaped the code**: Forge SQL is provisioned per installation (the Confluence macro reads the published pages rather than the Jira installation's database); resolvers have 25 s (publication runs in an async-events consumer); no foreign keys, no auto-increment (UUIDs, idempotent migrations re-checked hourly).
 
+## Security model
+
+- Every Jira/Confluence call is made as the app, except the checks that must be the user's: writes from the UI and from the Rovo agent require Jira **administrator** (`mypermissions`, as user, fail closed); the agent reads a Confluence page **as the calling user**; a JQL scope recorded through the agent must run for that user first; the issue panel answers only about issues the caller can open.
+- The web trigger accepts the token in a header only, compares it in constant time, and never queues a second analysis while one runs.
+- Only `https://` URLs are stored as sources (they end up in `href` attributes); everything written to Confluence storage format goes through one escaper.
+- SQL is always prepared with bound parameters; column names come from an allow-list.
+- No egress: no `permissions.external`, no remotes, no external scripts or fonts. Forge storage only.
+- `manage:jira-configuration` and `write:confluence-space` exist only for the demo loader (create/delete the demo project and space).
+
+A white-box review (scopes, authz, injection, storage escaping, web trigger, tenant isolation) was run before submission; the two findings it produced — agent page reads as app, agent writes without the admin check — are fixed above.
+
 ## Things learned the hard way
 
 - `FIELD` is a reserved JQL word; always quote project keys in JQL.

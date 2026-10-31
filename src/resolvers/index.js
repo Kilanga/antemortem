@@ -11,10 +11,11 @@
 import Resolver from '@forge/resolver';
 import { getSchemaStatus, runMigrations } from '../db/migrate.js';
 import { getSettings, saveSettings, ensureWebtriggerToken } from '../settings.js';
-import { webTrigger } from '@forge/api';
+import api, { route, webTrigger } from '@forge/api';
 import { dismissIncident } from '../engine/publish.js';
 import { simulateObligation, backtest } from '../engine/simulate.js';
 import { actionsSummary } from '../engine/index.js';
+import { httpsOnly } from '../rovo/actions.js';
 import { graphSourceFor } from '../graph/index.js';
 import { periodWindow } from '../engine/metrics.js';
 import { query, parseJson } from '../db/client.js';
@@ -206,7 +207,7 @@ resolver.define('saveDecision', admin(async (req) => {
     decided_by: Array.isArray(p.decided_by) ? p.decided_by.slice(0, 20).map((x) => str(x, 128)) : [],
     source_type: ['jira_issue', 'confluence_page', 'manual'].includes(p.source_type) ? p.source_type : 'manual',
     source_id: str(p.source_id, 128),
-    source_url: str(p.source_url, 1024),
+    source_url: httpsOnly(p.source_url),
     alternatives_rejected: Array.isArray(p.alternatives_rejected) ? p.alternatives_rejected.slice(0, 20).map((a) => ({ label: str(a.label, 255), reason: str(a.reason, 1000) })) : [],
     status: ['active', 'superseded', 'contradicted', 'retired'].includes(p.status) ? p.status : 'active',
   };
@@ -384,6 +385,9 @@ resolver.define('dismissIncident', admin(async (req) => {
 resolver.define('getIssueContext', safe(async (req) => {
   const issueKey = str(req.payload?.issueKey ?? req.context?.extension?.issue?.key, 32);
   if (!issueKey || !/^[A-Z][A-Z0-9_]+-\d+$/.test(issueKey)) return { ok: false, error: 'No issue key.' };
+  // The panel answers only about issues the caller can see (the key comes from the client).
+  const visible = await api.asUser().requestJira(route`/rest/api/3/issue/${issueKey}?fields=key`, { headers: { Accept: 'application/json' } });
+  if (!visible.ok) return { ok: false, error: 'Issue not found.' };
   const siteUrl = req.context?.siteUrl ?? '';
 
   // Obligations whose scope contains this issue (one cheap JQL per obligation).

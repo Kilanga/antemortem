@@ -7,6 +7,8 @@ import { runMigrations, getSchemaStatus } from '../db/migrate.js';
 import { runAnalysis } from '../engine/index.js';
 import { getSettings } from '../settings.js';
 import { jobsQueue } from '../demo/consumer.js';
+import { query, toSqlDateTime } from '../db/client.js';
+import { timingSafeEqual } from 'node:crypto';
 
 /** avi:forge:installed:app / avi:forge:upgraded:app */
 export async function onInstall(event, context) {
@@ -41,10 +43,17 @@ export async function hourly() {
 export async function runAnalysisWebtrigger(request) {
   if (request?.method && request.method !== 'POST') return response(405, { error: 'POST only' });
   const settings = await getSettings();
-  const given = request?.headers?.['x-antemortem-token']?.[0] ?? request?.queryParameters?.token?.[0] ?? null;
-  if (!settings.webtriggerToken || given !== settings.webtriggerToken) return response(401, { error: 'Invalid or missing token. Generate one in Antemortem → Settings.' });
+  const given = request?.headers?.['x-antemortem-token']?.[0] ?? null; // header only: query strings land in logs
+  if (!settings.webtriggerToken || !given || !sameToken(given, settings.webtriggerToken)) return response(401, { error: 'Invalid or missing token. Generate one in Antemortem → Settings.' });
+  const running = await query("SELECT id FROM analysis_run WHERE status = 'running' AND started_at > ? LIMIT 1", [toSqlDateTime(new Date(Date.now() - 10 * 60_000))]);
+  if (running.length) return response(202, { ok: true, queued: false, note: 'an analysis is already running' });
   await jobsQueue.push({ body: { job: 'run-analysis', source: 'webtrigger' } });
   return response(202, { ok: true, queued: true });
+}
+
+function sameToken(a, b) {
+  const x = Buffer.from(String(a)); const y = Buffer.from(String(b));
+  return x.length === y.length && timingSafeEqual(x, y);
 }
 
 function response(statusCode, body) {

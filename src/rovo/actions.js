@@ -8,8 +8,22 @@
  */
 import { query, parseJson } from '../db/client.js';
 import { futureIncidents, obligations, decisions, assumptions, availability, contracts, linkObjects, hydrate, listObligationsWithContract } from '../db/repo/index.js';
-import { getPage } from '../confluence/client.js';
-import { searchIssues } from '../jira/client.js';
+import { getPageAsUser } from '../confluence/client.js';
+import { searchIssues, currentUserHasPermission } from '../jira/client.js';
+
+/**
+ * Writes from the agent are gated exactly like writes from the UI: the
+ * calling user must be a Jira administrator. The agent's "ask the user to
+ * confirm" is a convention, not a control; this is the control.
+ */
+async function requireAdmin() {
+  let ok = false;
+  try { ok = await currentUserHasPermission('ADMINISTER'); } catch { ok = false; }
+  return ok ? null : { error: 'Only a Jira administrator can record this. Ask an admin, or use Antemortem in Jira (Apps → Antemortem).' };
+}
+
+/** Only https URLs are stored as sources (they end up in href attributes). */
+export const httpsOnly = (v) => { const s = v ? String(v).trim().slice(0, 1024) : ''; return /^https:\/\//i.test(s) ? s : null; };
 import { getSiteUrl } from '../engine/publish.js';
 import { fmtMoney, longDate } from '../engine/narrative/index.js';
 
@@ -77,6 +91,8 @@ export async function listCorrectiveActions(payload) {
 
 /** Record a decision with its assumptions (free text; the engine monitors typed ones later). */
 export async function recordDecision(payload) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const title = String(payload?.title ?? '').trim().slice(0, 255);
   const statement = String(payload?.statement ?? '').trim().slice(0, 4000);
   if (!title || !statement) return { error: 'title and statement are required.' };
@@ -84,7 +100,7 @@ export async function recordDecision(payload) {
   const assumptionsText = payload?.assumptions ? String(payload.assumptions) : '';
   const code = payload?.obligationCode ? String(payload.obligationCode).trim().toUpperCase() : null;
 
-  const sourceUrl = payload?.sourceUrl ? String(payload.sourceUrl).trim().slice(0, 1024) : null;
+  const sourceUrl = httpsOnly(payload?.sourceUrl);
   const decidedAt = payload?.decidedAt && !Number.isNaN(Date.parse(payload.decidedAt)) ? new Date(payload.decidedAt) : new Date();
   const dec = await decisions.create({ title, statement, rationale, decided_at: decidedAt, decided_by: [], source_type: sourceUrl ? 'confluence_page' : 'manual', source_url: sourceUrl, status: 'active', alternatives_rejected: [] });
   const lines = assumptionsText.split(/\n/).map((s) => s.trim()).filter(Boolean).slice(0, 10);
@@ -133,8 +149,10 @@ export async function readPageForDecision(payload) {
   const ref = String(payload?.page ?? '').trim();
   const id = ref.match(/\/pages\/(\d+)/)?.[1] ?? ref.match(/^(\d+)$/)?.[1] ?? null;
   if (!id) return { error: 'Give a Confluence page id or URL (…/pages/<id>/…).' };
+  // Read as the calling user: the agent must not see what they cannot.
   let page;
-  try { page = await getPage(id); } catch (err) { return { error: `Cannot read page ${id}: ${err?.message ?? err}` }; }
+  try { page = await getPageAsUser(id); } catch (err) { return { error: `Cannot read page ${id}: ${err?.message ?? err}` }; }
+  if (!page) return { error: `Page ${id} does not exist or you do not have access to it.` };
   const text = page.body.replace(/<ac:structured-macro[\s\S]*?<\/ac:structured-macro>/g, ' ').replace(/<\/(p|li|tr|h\d)>/g, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim().slice(0, 12000);
   const siteUrl = await getSiteUrl();
   const sourceUrl = page.webui ? `${siteUrl}/wiki${page.webui}` : null;
@@ -197,7 +215,10 @@ function summarise(fi, siteUrl = '') {
  * confirmed it. Creates the contract if the name is new.
  */
 export async function recordObligation(payload) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const p = payload ?? {};
+  const sourceUrl = httpsOnly(p.sourceUrl);
   const code = String(p.code ?? '').trim().toUpperCase().slice(0, 32);
   const title = String(p.title ?? '').trim().slice(0, 255);
   if (!code || !title) return { error: 'code and title are required.' };
@@ -207,17 +228,22 @@ export async function recordObligation(payload) {
   if (!contractName) return { error: 'contractName is required.' };
 
   let [contract] = await contracts.list({ where: 'name = ?', params: [contractName], limit: 1 });
-  if (!contract) contract = await contracts.create({ name: contractName, counterparty: p.counterparty ? String(p.counterparty).slice(0, 255) : null, currency: p.currency ? String(p.currency).slice(0, 3).toUpperCase() : 'EUR', notes: p.sourceUrl ? `Recorded from ${p.sourceUrl}` : null });
+  if (!contract) contract = await contracts.create({ name: contractName, counterparty: p.counterparty ? String(p.counterparty).slice(0, 255) : null, currency: p.currency ? String(p.currency).slice(0, 3).toUpperCase() : 'EUR', notes: sourceUrl ? `Recorded from ${sourceUrl}` : null });
 
   const [dup] = await obligations.list({ where: 'code = ? AND contract_id = ?', params: [code, contract.id], limit: 1 });
   if (dup) return { error: `${code} already exists on this contract (${dup.title}).` };
 
+  const jqlScope = p.jqlScope ? String(p.jqlScope).slice(0, 2000) : null;
+  if (jqlScope) {
+    const check = await validateJqlAsUser(jqlScope);
+    if (check.error) return { error: `JQL scope rejected: ${check.error}` };
+  }
   const threshold = p.threshold != null && p.threshold !== '' ? Number(p.threshold) : null;
   const row = {
     contract_id: contract.id, code, title,
-    description: p.description ? String(p.description).slice(0, 4000) : (p.sourceUrl ? `Source: ${p.sourceUrl}` : null),
+    description: p.description ? String(p.description).slice(0, 4000) : (sourceUrl ? `Source: ${sourceUrl}` : null),
     metric_type: metric,
-    jql_scope: p.jqlScope ? String(p.jqlScope).slice(0, 2000) : null,
+    jql_scope: jqlScope,
     sla_hours: p.slaHours != null && p.slaHours !== '' ? Number(p.slaHours) : null,
     sla_name: p.slaName ? String(p.slaName).slice(0, 255) : null,
     threshold: metric === 'ratio_within_sla' || metric === 'jsm_sla' && threshold != null && threshold > 1 ? threshold / 100 : threshold,
@@ -234,4 +260,14 @@ export async function recordObligation(payload) {
     recorded: { id: saved.id, code, title, contract: contract.name, metric, scopeJql: row.jql_scope },
     note: row.jql_scope ? 'The scope JQL can be tested in Antemortem → Obligations → Edit → Test JQL. The next analysis measures it.' : 'No JQL scope: give it one in Antemortem → Obligations before the engine can measure this obligation.',
   };
+}
+
+/** The JQL must parse and run for the calling user (asUser search): what they cannot see cannot become a scope. */
+async function validateJqlAsUser(jql) {
+  const { default: api, route } = await import('@forge/api');
+  const res = await api.asUser().requestJira(route`/rest/api/3/search/jql?jql=${jql}&maxResults=1&fields=key`, { headers: { Accept: 'application/json' } });
+  if (res.ok) return { ok: true };
+  let msg = `HTTP ${res.status}`;
+  try { const j = await res.json(); msg = (j.errorMessages ?? []).join(' ') || msg; } catch { /* keep */ }
+  return { error: msg };
 }

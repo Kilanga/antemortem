@@ -78,6 +78,15 @@ export async function createPage({ spaceId, title, storageBody, parentId = null 
   return { id: String(res.id), title: res.title, version: res.version?.number ?? 1, webui: res._links?.webui ?? null };
 }
 
+/** The page as the calling user may see it (asUser): 403/404 when they may not. */
+export async function getPageAsUser(id) {
+  const res = await api.asUser().requestConfluence(route`/wiki/api/v2/pages/${id}?body-format=storage`, { headers: { Accept: 'application/json' } });
+  if (res.status === 403 || res.status === 404) return null;
+  if (!res.ok) throw new Error(`Confluence GET page ${res.status}`);
+  const p = await res.json();
+  return { id: String(p.id), title: p.title, version: p.version?.number ?? 1, spaceId: String(p.spaceId), parentId: p.parentId ? String(p.parentId) : null, body: p.body?.storage?.value ?? '', webui: p._links?.webui ?? null };
+}
+
 export async function getPage(id) {
   const res = await call('GET', route`/wiki/api/v2/pages/${id}?body-format=storage`);
   return { id: String(res.id), title: res.title, version: res.version?.number ?? 1, spaceId: String(res.spaceId), parentId: res.parentId ? String(res.parentId) : null, body: res.body?.storage?.value ?? '', webui: res._links?.webui ?? null };
