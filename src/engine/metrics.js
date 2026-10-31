@@ -45,6 +45,7 @@ export function computeMetric(obligation, issues, now = new Date()) {
   const win = periodWindow(obligation, now);
   switch (obligation.metric_type) {
     case 'ratio_within_sla': return ratioWithinSla(obligation, inWindow(issues, win), win, now);
+    case 'jsm_sla': return jsmSla(obligation, inWindow(issues, win), win);
     case 'count_max': return countMetric(obligation, inWindow(issues, win), win, 'max');
     case 'count_min': return countMetric(obligation, inWindow(issues, win), win, 'min');
     case 'deadline': return deadlineMetric(obligation, issues, win, now);
@@ -103,6 +104,50 @@ function ratioWithinSla(o, issues, win, now) {
       openLikelyOk: openLikelyOk.length,
       medianHours: round(medianMs / H, 1),
       slaHours: Number(o.sla_hours),
+      neededOnTimeToRecover: needed,
+    },
+  };
+}
+
+/**
+ * jsm_sla — share of requests whose Jira Service Management SLA completed
+ * without ever breaching. The SLA clock (pauses, calendars) is JSM's own:
+ * issues arrive annotated by the graph source (`issue.sla`), from the JQL
+ * functions completed(), everBreached(), running(), remaining().
+ */
+function jsmSla(o, issues, win) {
+  const threshold = Number(o.threshold);
+  const withSla = issues.filter((i) => i.sla);
+  const completed = withSla.filter((i) => i.sla.completed);
+  const within = completed.filter((i) => !i.sla.everBreached);
+  const running = withSla.filter((i) => i.sla.running);
+  const runningBreached = running.filter((i) => i.sla.breached);
+  const runningNear = running.filter((i) => !i.sla.breached && i.sla.nearLimit);
+  const runningOk = running.length - runningBreached.length;
+  const current = completed.length ? within.length / completed.length : 1;
+  const total = completed.length + running.length;
+  const projectedWithin = within.length + runningOk;
+  const projected = total ? projectedWithin / total : 1;
+  const needed = projected >= threshold ? 0 : Math.ceil((threshold * total - projectedWithin) / (1 - threshold));
+  return {
+    kind: 'jsm_sla',
+    current: round(current),
+    projected: round(projected),
+    threshold,
+    holds: current >= threshold,
+    projectedHolds: projected >= threshold,
+    margin: round(current - threshold),
+    window: win,
+    detail: {
+      slaName: o.sla_name,
+      resolved: completed.length,
+      within: within.length,
+      breached: completed.length - within.length,
+      open: running.length,
+      openPastSla: runningBreached.map((i) => i.key),
+      openNearSla: runningNear.map((i) => i.key),
+      openLikelyOk: runningOk,
+      slaHours: o.sla_hours != null ? Number(o.sla_hours) : null,
       neededOnTimeToRecover: needed,
     },
   };

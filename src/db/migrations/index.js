@@ -207,6 +207,11 @@ export const migrations = [
       ADD COLUMN IF NOT EXISTS period_starts_on DATE NULL,
       ADD COLUMN IF NOT EXISTS period_ends_on DATE NULL`,
   },
+  {
+    // Jira Service Management SLA field used as the measure (metric_type jsm_sla).
+    name: 'v013_obligation_sla_name',
+    statement: `ALTER TABLE obligation ADD COLUMN IF NOT EXISTS sla_name VARCHAR(255) NULL`,
+  },
 ];
 
 /** Table names, in creation order — used by the health check. */

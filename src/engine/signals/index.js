@@ -27,7 +27,7 @@ const ymd = (d) => iso(d)?.slice(0, 10);
 export function detectObligationTrend({ obligation, metric, now, minSample = 10 }) {
   if (metric.kind === 'custom' || metric.holds && metric.projectedHolds) return [];
   // A ratio over a handful of issues is noise, not a trend.
-  if (metric.kind === 'ratio_within_sla' && (metric.detail?.resolved ?? 0) < minSample) return [];
+  if ((metric.kind === 'ratio_within_sla' || metric.kind === 'jsm_sla') && (metric.detail?.resolved ?? 0) < minSample) return [];
   let severity;
   if (!metric.holds && !metric.projectedHolds) severity = metric.margin != null && metric.margin < -0.05 ? 5 : 4;
   else if (!metric.holds) severity = 3;

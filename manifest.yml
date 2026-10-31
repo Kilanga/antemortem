@@ -193,17 +193,22 @@ modules:
           title: Metric type
           type: string
           required: true
-          description: ratio_within_sla, count_max, count_min or deadline.
+          description: ratio_within_sla (dates), jsm_sla (a Jira Service Management SLA field), count_max, count_min or deadline.
         slaHours:
           title: SLA hours
           type: number
           required: false
           description: For ratio_within_sla, the time limit in hours.
+        slaName:
+          title: SLA name
+          type: string
+          required: false
+          description: For jsm_sla, the JSM SLA field name, e.g. Time to resolution.
         threshold:
           title: Threshold
           type: number
           required: false
-          description: Ratio 0–1 (or percent) for ratio_within_sla; the count for count_max / count_min.
+          description: Ratio 0–1 (or percent) for ratio_within_sla / jsm_sla; the count for count_max / count_min.
         period:
           title: Period
           type: string

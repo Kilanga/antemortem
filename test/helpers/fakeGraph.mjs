@@ -21,6 +21,7 @@ export function fakeGraphFromScenario(scenario, now) {
     labels: spec.labels,
     people: spec.labels.filter((l) => l.startsWith('tech-')).map((l) => `label:${l}`),
     vendor: spec.labels.find((l) => l.startsWith('vendor-')) ?? null,
+    sla: spec.sla ?? null,
     startedAt: spec.startedAt,
     dueAt: spec.dueAt,
     resolvedAt: spec.resolvedAt,
@@ -38,6 +39,9 @@ export function fakeGraphFromScenario(scenario, now) {
       if ((m = c.match(/^labels\s*=\s*"?([\w-]+)"?$/i))) return i.labels.includes(m[1]);
       if ((m = c.match(/^statusCategory\s*!=\s*Done$/i))) return i.status.category !== 'done';
       if ((m = c.match(/^key\s+in\s*\((.*)\)$/i))) return m[1].split(',').map((k) => k.trim()).includes(i.key);
+      if ((m = c.match(/^\(([^()]*(?:\([^()]*\)[^()]*)*)\)$/))) return evalJql(m[1]).includes(i);
+      if ((m = c.match(/^"([^"]+)"\s*=\s*(completed|everBreached|running|breached|paused)\(\)$/))) return Boolean(i.sla?.[m[2]]);
+      if ((m = c.match(/^"([^"]+)"\s*<\s*remaining\s*\("(\d+)h"\)$/))) return i.sla?.running && i.sla.remainingMs != null && i.sla.remainingMs < Number(m[2]) * 3600_000;
       throw new Error(`fake JQL cannot evaluate: ${c}`);
     }));
   };

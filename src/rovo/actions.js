@@ -201,8 +201,8 @@ export async function recordObligation(payload) {
   const code = String(p.code ?? '').trim().toUpperCase().slice(0, 32);
   const title = String(p.title ?? '').trim().slice(0, 255);
   if (!code || !title) return { error: 'code and title are required.' };
-  const metric = ['ratio_within_sla', 'count_max', 'count_min', 'deadline'].includes(p.metricType) ? p.metricType : null;
-  if (!metric) return { error: 'metricType must be ratio_within_sla, count_max, count_min or deadline.' };
+  const metric = ['ratio_within_sla', 'jsm_sla', 'count_max', 'count_min', 'deadline'].includes(p.metricType) ? p.metricType : null;
+  if (!metric) return { error: 'metricType must be ratio_within_sla, jsm_sla, count_max, count_min or deadline.' };
   const contractName = String(p.contractName ?? '').trim().slice(0, 255);
   if (!contractName) return { error: 'contractName is required.' };
 
@@ -219,7 +219,8 @@ export async function recordObligation(payload) {
     metric_type: metric,
     jql_scope: p.jqlScope ? String(p.jqlScope).slice(0, 2000) : null,
     sla_hours: p.slaHours != null && p.slaHours !== '' ? Number(p.slaHours) : null,
-    threshold: metric === 'ratio_within_sla' && threshold != null && threshold > 1 ? threshold / 100 : threshold,
+    sla_name: p.slaName ? String(p.slaName).slice(0, 255) : null,
+    threshold: metric === 'ratio_within_sla' || metric === 'jsm_sla' && threshold != null && threshold > 1 ? threshold / 100 : threshold,
     period: ['monthly', 'weekly', 'custom', 'one_shot'].includes(p.period) ? p.period : 'monthly',
     period_starts_on: p.periodStartsOn && !Number.isNaN(Date.parse(p.periodStartsOn)) ? String(p.periodStartsOn).slice(0, 10) : null,
     period_ends_on: p.periodEndsOn && !Number.isNaN(Date.parse(p.periodEndsOn)) ? String(p.periodEndsOn).slice(0, 10) : null,

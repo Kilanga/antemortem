@@ -18,7 +18,8 @@ import { detectObligationTrend, detectStaleCriticalIssues, detectSinglePointOfFa
 import { computeForecast } from './forecast.js';
 
 export async function analyseObligation({ obligation, decisions, graph, now = new Date(), actions, whatIf = null }) {
-  const issues = obligation.jql_scope ? await graph.issuesInScope(obligation.jql_scope) : [];
+  let issues = obligation.jql_scope ? await graph.issuesInScope(obligation.jql_scope) : [];
+  if (obligation.metric_type === 'jsm_sla' && obligation.sla_name && issues.length) issues = await annotateSla(graph, obligation, issues);
   let metric = computeMetric(obligation, issues, now);
   if (whatIf?.onTime) metric = assumeOpenOnTime(metric);
   const window = { ...metric.window, issues };
@@ -77,9 +78,28 @@ export function buildChain({ obligation, decisions, metric, directSignals, assum
   return entries.sort((a, b) => (a.at ?? '').localeCompare(b.at ?? '') || rank(a.role) - rank(b.role));
 }
 
+/**
+ * Ask Jira which issues of the scope are in each SLA state, using the JQL
+ * SLA functions of Jira Service Management, and mark the issues.
+ */
+async function annotateSla(graph, obligation, issues) {
+  const sla = `"${String(obligation.sla_name).replace(/"/g, '')}"`;
+  const scope = `(${obligation.jql_scope})`;
+  const keysOf = async (clause) => new Set((await graph.issuesInScope(`${scope} AND ${clause}`)).map((i) => i.key));
+  const nearWindow = obligation.sla_hours ? `${Math.max(1, Math.round(Number(obligation.sla_hours) * 0.25))}h` : '1h';
+  const [completed, everBreached, running, breached, near] = await Promise.all([
+    keysOf(`${sla} = completed()`),
+    keysOf(`${sla} = everBreached()`),
+    keysOf(`${sla} = running()`),
+    keysOf(`${sla} = breached()`),
+    keysOf(`${sla} < remaining("${nearWindow}")`),
+  ]);
+  return issues.map((i) => ({ ...i, sla: { completed: completed.has(i.key), everBreached: everBreached.has(i.key), running: running.has(i.key), breached: breached.has(i.key), nearLimit: near.has(i.key) } }));
+}
+
 /** ratio_within_sla with every open issue restored within the SLA. */
 function assumeOpenOnTime(m) {
-  if (m.kind !== 'ratio_within_sla') return m;
+  if (m.kind !== 'ratio_within_sla' && m.kind !== 'jsm_sla') return m;
   const total = (m.detail.resolved ?? 0) + (m.detail.open ?? 0);
   const projected = total ? ((m.detail.within ?? 0) + (m.detail.open ?? 0)) / total : 1;
   return { ...m, projected: Math.round(projected * 1000) / 1000, projectedHolds: projected >= m.threshold, detail: { ...m.detail, openLikelyOk: m.detail.open, neededOnTimeToRecover: 0, whatIf: 'open issues on time' } };

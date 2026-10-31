@@ -3,7 +3,8 @@ import { api } from '../api.js';
 import { Card, Callout, ConfirmButton, Field, fmtDate, fmtMoney } from '../ui.jsx';
 
 const METRICS = [
-  ['ratio_within_sla', 'Ratio of issues resolved within an SLA'],
+  ['ratio_within_sla', 'Ratio of issues resolved within N hours (from dates)'],
+  ['jsm_sla', 'Ratio of requests meeting a Jira Service Management SLA'],
   ['count_max', 'Count must stay at or below a maximum'],
   ['count_min', 'Count must reach a minimum'],
   ['deadline', 'A deliverable must be done by a date'],
@@ -13,6 +14,7 @@ const METRICS = [
 /** Starting points for the obligations field-service and managed-service contracts usually carry. */
 const TEMPLATES = [
   { key: 'restore', label: 'Restoration SLA', hint: 'x % of interventions restored within N hours', patch: { title: 'Restoration ≤ 4 h on 95 % of interventions', metric_type: 'ratio_within_sla', sla_hours: 4, threshold: 0.95, period: 'monthly', penalty_type: 'percent_of_invoice', penalty_value: 2, jql_scope: 'project = "KEY" AND labels = intervention' } },
+  { key: 'jsm', label: 'JSM SLA', hint: 'x % of requests meeting a JSM SLA field, with its own clock and calendar', patch: { title: '95 % of requests within "Time to resolution"', metric_type: 'jsm_sla', sla_name: 'Time to resolution', sla_hours: 8, threshold: 0.95, period: 'monthly', penalty_type: 'percent_of_invoice', penalty_value: 2, jql_scope: 'project = "KEY" AND type = "Service Request"' } },
   { key: 'repeat', label: 'Repeat-fault cap', hint: 'no more than N reopened faults per period', patch: { title: 'Repeat faults ≤ 3 per month', metric_type: 'count_max', threshold: 3, period: 'monthly', penalty_type: 'fixed', penalty_value: 8000, jql_scope: 'project = "KEY" AND labels = reopened' } },
   { key: 'deliverable', label: 'Deliverable by a date', hint: 'a report or document due by a deadline', patch: { title: 'Monthly service report delivered by J+5', metric_type: 'deadline', period: 'monthly', penalty_type: 'fixed', penalty_value: 2500, jql_scope: 'project = "KEY" AND labels = reporting' } },
   { key: 'volume', label: 'Minimum volume', hint: 'at least N preventive visits per period', patch: { title: 'At least 20 preventive visits per month', metric_type: 'count_min', threshold: 20, period: 'monthly', penalty_type: 'fixed', penalty_value: 1500, jql_scope: 'project = "KEY" AND labels = preventive AND statusCategory = Done' } },
@@ -20,7 +22,7 @@ const TEMPLATES = [
 
 const EMPTY = {
   contract_id: '', code: '', title: '', description: '', metric_type: 'ratio_within_sla', jql_scope: '',
-  sla_hours: '', threshold: '', period: 'monthly', period_starts_on: '', period_ends_on: '',
+  sla_hours: '', sla_name: '', threshold: '', period: 'monthly', period_starts_on: '', period_ends_on: '',
   penalty_type: 'fixed', penalty_value: '', invoice_basis: '', status: 'active',
 };
 
@@ -159,6 +161,11 @@ function ObligationEditor({ initial, contracts, onClose, onSaved, notify }) {
             </span>
           )}
         </Field>
+        {form.metric_type === 'jsm_sla' && (<>
+          <Field label="SLA field" hint='as named in JSM, e.g. "Time to resolution"'><input value={form.sla_name ?? ''} onChange={set('sla_name')} required /></Field>
+          <Field label="Goal (hours)" hint="the SLA goal, for the near-limit window"><input type="number" step="0.5" value={form.sla_hours ?? ''} onChange={set('sla_hours')} /></Field>
+          <Field label="Threshold" hint="0–1, e.g. 0.95"><input type="number" step="0.01" min="0" max="1" value={form.threshold ?? ''} onChange={set('threshold')} /></Field>
+        </>)}
         {form.metric_type === 'ratio_within_sla' && (<>
           <Field label="SLA (hours)"><input type="number" step="0.25" value={form.sla_hours ?? ''} onChange={set('sla_hours')} /></Field>
           <Field label="Threshold" hint="0–1, e.g. 0.95"><input type="number" step="0.01" min="0" max="1" value={form.threshold ?? ''} onChange={set('threshold')} /></Field>

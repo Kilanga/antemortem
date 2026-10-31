@@ -28,7 +28,7 @@ Antemortem reads the organisation's work in Jira and Confluence and, when a cont
 
 To do that, it adds three objects the platform does not have:
 
-- **Obligations** — measurable contractual rules ("95 % of lot 3 interventions restored within 4 h over the period, or 2 % off the invoice"), tied to the Jira issues that feed them.
+- **Obligations** — measurable contractual rules ("95 % of lot 3 interventions restored within 4 h over the period, or 2 % off the invoice"), tied to the Jira issues that feed them — from dates, or from a Jira Service Management SLA field with its own clock and calendar.
 - **Decisions with assumptions** — what was decided and what it rested on, with typed assumptions the engine can watch: a person stays available, a vendor stays under a load, a dependency lands by a date, work in a scope stays routed to a vendor.
 - **Causal links** between obligations, decisions, assumptions and the work.
 

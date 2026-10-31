@@ -45,7 +45,7 @@ test/                        node --test, with an in-memory graph source
 ```mermaid
 flowchart LR
   subgraph Model["The three objects the platform lacks (Forge SQL)"]
-    C[Contract] --> O[Obligation<br/>metric · threshold · period · penalty · JQL scope]
+    C[Contract] --> O[Obligation<br/>metric · threshold · period · penalty · JQL scope<br/>dates or a JSM SLA field]
     O -. depends_on .-> D[Decision]
     D -. rests_on .-> A[Assumption<br/>capacity · person · dependency · routing]
   end

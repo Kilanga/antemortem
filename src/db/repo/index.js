@@ -26,7 +26,7 @@ const COLUMNS = {
   obligation: [
     'contract_id', 'code', 'title', 'description', 'metric_type', 'jql_scope', 'sla_hours', 'threshold',
     'period', 'period_starts_on', 'period_ends_on', 'penalty_type', 'penalty_value', 'invoice_basis',
-    'owner_account_id', 'status',
+    'owner_account_id', 'status', 'sla_name',
   ],
   decision: [
     'title', 'statement', 'rationale', 'decided_at', 'decided_by', 'source_type', 'source_id', 'source_url',

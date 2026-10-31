@@ -160,7 +160,7 @@ function ForecastRow({ item }) {
             <strong>{o.title}</strong>
             {f ? <span className={`pill ${healthy ? 'ok' : pct >= 60 ? 'danger' : 'warn'}`}>{healthy ? 'holds' : `${pct} % by ${fmtDate(f.projected_breach_date)}`}</span> : <span className="pill idle">not analysed yet</span>}
           </div>
-          {m && m.kind === 'ratio_within_sla' && (
+          {m && (m.kind === 'ratio_within_sla' || m.kind === 'jsm_sla') && (
             <div className="meter" title={`current ${Math.round(m.current * 100)} % · projected ${Math.round(m.projected * 100)} % · threshold ${Math.round(m.threshold * 100)} %`}>
               <div className="meter-bar"><span className="meter-cur" style={{ width: `${m.current * 100}%` }} /><span className="meter-proj" style={{ left: `${m.projected * 100}%` }} /><span className="meter-thr" style={{ left: `${m.threshold * 100}%` }} /></div>
               <div className="meter-legend muted small">{Math.round(m.current * 100)} % → {Math.round(m.projected * 100)} %, required {Math.round(m.threshold * 100)} %</div>
@@ -194,7 +194,7 @@ function ForecastRow({ item }) {
                 </li>
               );
             })}
-            {m && m.kind === 'ratio_within_sla' && (
+            {m && (m.kind === 'ratio_within_sla' || m.kind === 'jsm_sla') && (
               <li className="measurement">
                 <span className="tl-date" />
                 <span className="tl-text"><input type="checkbox" className="whatif" checked={onTime} onChange={toggleOnTime} />every open issue restored within the SLA</span>

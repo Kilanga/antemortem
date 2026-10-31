@@ -28,6 +28,8 @@ export function composeIncident({ obligation, contract, decisions, metric, signa
   const impact = [];
   if (metric.kind === 'ratio_within_sla') {
     impact.push(`On ${longDate(breach)}, the contractual period for ${obligation.code} (${obligation.title}) closes with ${pctOf(metric.projected)} of ${scopeLabel} restored within ${metric.detail.slaHours} h, against the ${pctOf(metric.threshold)} required.`);
+  } else if (metric.kind === 'jsm_sla') {
+    impact.push(`On ${longDate(breach)}, the contractual period for ${obligation.code} (${obligation.title}) closes with ${pctOf(metric.projected)} of ${scopeLabel} meeting the "${metric.detail.slaName}" SLA, against the ${pctOf(metric.threshold)} required.`);
   } else if (metric.kind === 'deadline') {
     impact.push(`On ${longDate(breach)}, the deliverable required by ${obligation.code} (${obligation.title}) is not delivered.`);
   } else {
@@ -60,7 +62,8 @@ export function composeIncident({ obligation, contract, decisions, metric, signa
   const factors = [];
   if (trend.openNearSla?.length) {
     const n = trend.openNearSla.length;
-    factors.push(`${n} intervention${n === 1 ? ' is' : 's are'} within an hour of the ${trend.slaHours} h limit (${trend.openNearSla.join(', ')}). ${trend.neededOnTimeToRecover} consecutive on-time restorations would be needed to get back above ${pctOf(metric.threshold)}.`);
+    const limit = trend.slaHours ? `the ${trend.slaHours} h limit` : `the "${trend.slaName}" goal`;
+    factors.push(`${n} intervention${n === 1 ? ' is' : 's are'} close to ${limit} (${trend.openNearSla.join(', ')}). ${trend.neededOnTimeToRecover} consecutive on-time restorations would be needed to get back above ${pctOf(metric.threshold)}.`);
   }
   if (bySignal.stale_critical_issue) {
     const ev = bySignal.stale_critical_issue.evidence;
@@ -135,7 +138,7 @@ export function correctiveActions({ obligation, signals, scopeLabel }) {
         add(`decide:${ev.decisionId}`, `Decide: confirm or revise "${ev.decision?.split(' · ')[0] ?? 'the sourcing decision'}"`, `${(ev.divergent ?? []).map((d) => d.key).join(', ')} route work away from ${ev.expected}. Either record a revised decision (and its new assumptions) or revert the routing.`, ['decision_contradicted']);
         break;
       case 'obligation_trend':
-        if (ev.openNearSla?.length) add(`triage:${obligation.id}`, `Triage the ${ev.openNearSla.length} interventions closest to the ${ev.slaHours} h limit`, `${ev.openNearSla.join(', ')} are near the SLA. Dispatch now; each one restored on time improves the ratio.`, ['obligation_trend']);
+        if (ev.openNearSla?.length) add(`triage:${obligation.id}`, `Triage the ${ev.openNearSla.length} interventions closest to ${ev.slaHours ? `the ${ev.slaHours} h limit` : 'the SLA goal'}`, `${ev.openNearSla.join(', ')} are near the SLA. Dispatch now; each one restored on time improves the ratio.`, ['obligation_trend']);
         break;
       case 'person_silent':
         add(`reach:${ev.personRef}`, `Reach ${personName(ev.personRef)} or reassign ${ev.heldIssues.join(', ')}`, `${personName(ev.personRef)} holds ${ev.heldIssues.length} open issues, none touched for ${ev.idleDays} days.`, ['person_silent']);
