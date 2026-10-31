@@ -7,7 +7,7 @@
  * engine computed from evidence.
  */
 import { query, parseJson } from '../db/client.js';
-import { futureIncidents, obligations, decisions, assumptions, availability, linkObjects, hydrate, listObligationsWithContract } from '../db/repo/index.js';
+import { futureIncidents, obligations, decisions, assumptions, availability, contracts, linkObjects, hydrate, listObligationsWithContract } from '../db/repo/index.js';
 import { getPage } from '../confluence/client.js';
 import { searchIssues } from '../jira/client.js';
 import { getSiteUrl } from '../engine/publish.js';
@@ -144,9 +144,11 @@ export async function readPageForDecision(payload) {
   const personRefs = [...new Map(people.map((p) => [p.account_id, p.display_name])).entries()].map(([personRef, displayName]) => ({ personRef, displayName }));
   let vendors = [];
   let openIssues = [];
+  let projectKeys = [];
   try {
     const scopes = obls.map((o) => o.jql_scope).filter(Boolean);
     const projects = [...new Set(scopes.map((j) => j.match(/project\s*=\s*"?([A-Z][A-Z0-9_]*)"?/i)?.[1]).filter(Boolean))];
+    projectKeys = projects;
     if (projects.length) {
       const issues = await searchIssues(`project in (${projects.map((p) => `"${p}"`).join(', ')}) AND statusCategory != Done ORDER BY updated DESC`, { fields: ["summary", "labels", "duedate"], maxTotal: 100, properties: [] });
       vendors = [...new Set(issues.flatMap((i) => (i.fields?.labels ?? []).filter((l) => l.startsWith('vendor-'))))];
@@ -158,7 +160,8 @@ export async function readPageForDecision(payload) {
   return {
     page: { id: page.id, title: page.title, url: sourceUrl },
     text,
-    references: { obligations: obls.map((o) => ({ code: o.code, title: o.title, scopeJql: o.jql_scope })), people: personRefs, vendors, openIssues },
+    references: { contracts: (await contracts.list({ limit: 50 })).map((c) => ({ name: c.name, counterparty: c.counterparty, currency: c.currency })), obligations: obls.map((o) => ({ code: o.code, title: o.title, scopeJql: o.jql_scope })), people: personRefs, vendors, openIssues, projects: projectKeys },
+    howToRecordObligations: 'If the page is a contract or an SLA annex, propose one obligation per measurable clause: code, title, metric (ratio_within_sla with slaHours and threshold 0–1 | count_max or count_min with threshold | deadline), period (monthly, weekly, or custom with dates), penalty (fixed amount, or percent_of_invoice with the invoice basis), and a JQL scope built on a listed project key and the labels the page implies. Ask the user to confirm, then call record-obligation once per obligation.',
     howToRecord: 'Propose a title, the statement, the date decided, the obligation it supports and typed assumptions, then ask the user to confirm. Only after a clear yes call record-decision with sourceUrl, decidedAt and assumptions as lines "statement :: kind :: key=value, key=value". Kinds: capacity (teamRef, maxOpenIssues), person_available (personRef, displayName, until), dependency_done_by (issueKey, date), routing (scopeJql, labelPrefix=vendor-, expected). Use only references listed here; otherwise leave the assumption freeform.',
   };
 }
@@ -186,5 +189,48 @@ function summarise(fi, siteUrl = '') {
     page: fi.confluence_page_url ?? null,
     correctiveActions: (fi.actions?.items ?? []).map((a) => `${a.status}: ${a.title}${a.issue_key ? ` (${a.issue_key})` : ''}`),
     costAvoided: fi.cost_avoided ?? null,
+  };
+}
+
+/**
+ * Record one obligation proposed from a contract page, after the user
+ * confirmed it. Creates the contract if the name is new.
+ */
+export async function recordObligation(payload) {
+  const p = payload ?? {};
+  const code = String(p.code ?? '').trim().toUpperCase().slice(0, 32);
+  const title = String(p.title ?? '').trim().slice(0, 255);
+  if (!code || !title) return { error: 'code and title are required.' };
+  const metric = ['ratio_within_sla', 'count_max', 'count_min', 'deadline'].includes(p.metricType) ? p.metricType : null;
+  if (!metric) return { error: 'metricType must be ratio_within_sla, count_max, count_min or deadline.' };
+  const contractName = String(p.contractName ?? '').trim().slice(0, 255);
+  if (!contractName) return { error: 'contractName is required.' };
+
+  let [contract] = await contracts.list({ where: 'name = ?', params: [contractName], limit: 1 });
+  if (!contract) contract = await contracts.create({ name: contractName, counterparty: p.counterparty ? String(p.counterparty).slice(0, 255) : null, currency: p.currency ? String(p.currency).slice(0, 3).toUpperCase() : 'EUR', notes: p.sourceUrl ? `Recorded from ${p.sourceUrl}` : null });
+
+  const [dup] = await obligations.list({ where: 'code = ? AND contract_id = ?', params: [code, contract.id], limit: 1 });
+  if (dup) return { error: `${code} already exists on this contract (${dup.title}).` };
+
+  const threshold = p.threshold != null && p.threshold !== '' ? Number(p.threshold) : null;
+  const row = {
+    contract_id: contract.id, code, title,
+    description: p.description ? String(p.description).slice(0, 4000) : (p.sourceUrl ? `Source: ${p.sourceUrl}` : null),
+    metric_type: metric,
+    jql_scope: p.jqlScope ? String(p.jqlScope).slice(0, 2000) : null,
+    sla_hours: p.slaHours != null && p.slaHours !== '' ? Number(p.slaHours) : null,
+    threshold: metric === 'ratio_within_sla' && threshold != null && threshold > 1 ? threshold / 100 : threshold,
+    period: ['monthly', 'weekly', 'custom', 'one_shot'].includes(p.period) ? p.period : 'monthly',
+    period_starts_on: p.periodStartsOn && !Number.isNaN(Date.parse(p.periodStartsOn)) ? String(p.periodStartsOn).slice(0, 10) : null,
+    period_ends_on: p.periodEndsOn && !Number.isNaN(Date.parse(p.periodEndsOn)) ? String(p.periodEndsOn).slice(0, 10) : null,
+    penalty_type: ['fixed', 'percent_of_invoice'].includes(p.penaltyType) ? p.penaltyType : null,
+    penalty_value: p.penaltyValue != null && p.penaltyValue !== '' ? Number(p.penaltyValue) : null,
+    invoice_basis: p.invoiceBasis != null && p.invoiceBasis !== '' ? Number(p.invoiceBasis) : null,
+    status: 'active',
+  };
+  const saved = await obligations.create(row);
+  return {
+    recorded: { id: saved.id, code, title, contract: contract.name, metric, scopeJql: row.jql_scope },
+    note: row.jql_scope ? 'The scope JQL can be tested in Antemortem → Obligations → Edit → Test JQL. The next analysis measures it.' : 'No JQL scope: give it one in Antemortem → Obligations before the engine can measure this obligation.',
   };
 }

@@ -45,6 +45,7 @@ modules:
         - How are our obligations doing?
         - What are the corrective actions right now?
         - Record the decision from this page and what it rests on
+        - Record the obligations from this contract page
       actions:
         - get-next-incident
         - explain-obligation
@@ -52,14 +53,15 @@ modules:
         - list-corrective-actions
         - record-decision
         - read-page-for-decision
+        - record-obligation
   action:
     - key: read-page-for-decision
-      name: Read a Confluence page to propose a decision and its assumptions
+      name: Read a Confluence page to propose decisions or obligations
       function: rovo-read-page
       actionVerb: GET
       description: >-
-        Reads a Confluence page and returns its text plus the references usable to type assumptions.
-        Use when the user points at a page to record a decision. Propose first; record only after confirmation.
+        Reads a Confluence page (minutes, a contract, an SLA annex) and returns its text with the references
+        needed to record decisions or obligations. Propose first; record only after the user confirms.
       inputs:
         page:
           title: Page
@@ -150,6 +152,89 @@ modules:
           type: string
           required: false
           description: Obligation this decision supports, such as O-3.
+    - key: record-obligation
+      name: Record a contractual obligation
+      function: rovo-record-obligation
+      actionVerb: CREATE
+      description: >-
+        Records one measurable contractual obligation (SLA ratio, count cap or floor, deliverable deadline)
+        with its period, penalty and JQL scope. Call once per obligation, only after the user confirmed the proposal.
+      inputs:
+        contractName:
+          title: Contract name
+          type: string
+          required: true
+          description: Name of the contract (created if new).
+        counterparty:
+          title: Counterparty
+          type: string
+          required: false
+          description: The client or party the obligation is owed to.
+        code:
+          title: Code
+          type: string
+          required: true
+          description: Short code, such as O-5.
+        title:
+          title: Title
+          type: string
+          required: true
+          description: The clause in one line, e.g. "Restoration ≤ 4 h on 95 % of lot 3 interventions".
+        metricType:
+          title: Metric type
+          type: string
+          required: true
+          description: ratio_within_sla, count_max, count_min or deadline.
+        slaHours:
+          title: SLA hours
+          type: number
+          required: false
+          description: For ratio_within_sla, the time limit in hours.
+        threshold:
+          title: Threshold
+          type: number
+          required: false
+          description: Ratio 0–1 (or percent) for ratio_within_sla; the count for count_max / count_min.
+        period:
+          title: Period
+          type: string
+          required: false
+          description: monthly (default), weekly, custom or one_shot.
+        periodStartsOn:
+          title: Period start
+          type: string
+          required: false
+          description: ISO date, for a custom period.
+        periodEndsOn:
+          title: Period end
+          type: string
+          required: false
+          description: ISO date, for a custom period.
+        penaltyType:
+          title: Penalty type
+          type: string
+          required: false
+          description: fixed or percent_of_invoice.
+        penaltyValue:
+          title: Penalty value
+          type: number
+          required: false
+          description: Amount for fixed; percentage for percent_of_invoice.
+        invoiceBasis:
+          title: Invoice basis
+          type: number
+          required: false
+          description: The invoice amount the percentage applies to.
+        jqlScope:
+          title: JQL scope
+          type: string
+          required: false
+          description: The issues that feed the measure, e.g. project = "NFS" AND labels = lot-3 AND labels = intervention.
+        sourceUrl:
+          title: Source URL
+          type: string
+          required: false
+          description: The Confluence page the obligation comes from.
 
   # ---------------------------------------------------------------------------
   # Lifecycle — schema is applied at install time, and re-checked hourly
@@ -212,6 +297,8 @@ modules:
       handler: index.recordDecision
     - key: rovo-read-page
       handler: index.readPageForDecision
+    - key: rovo-record-obligation
+      handler: index.recordObligation
 
 resources:
   - key: command-center

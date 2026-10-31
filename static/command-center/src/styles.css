@@ -140,6 +140,7 @@ h1 { font-family: var(--serif); font-weight: 400; font-size: 40px; line-height: 
 .chip.ok { border-color: #9fd3b4; color: #1f6b3d; }
 .chip.warn { border-color: #e2c27a; color: #7a5600; }
 .chip.danger { border-color: var(--accent); color: var(--accent); }
+.templates { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
 .whatif { margin: 0 8px 0 0; vertical-align: -1px; accent-color: var(--accent); }
 .timeline li.fixed .tl-text { text-decoration: line-through; color: var(--muted); }
 .whatif-result { margin: 10px 0 0; font-family: var(--serif); font-size: 15px; }

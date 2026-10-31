@@ -10,6 +10,14 @@ const METRICS = [
   ['custom', 'Custom (not computed)'],
 ];
 
+/** Starting points for the obligations field-service and managed-service contracts usually carry. */
+const TEMPLATES = [
+  { key: 'restore', label: 'Restoration SLA', hint: 'x % of interventions restored within N hours', patch: { title: 'Restoration ≤ 4 h on 95 % of interventions', metric_type: 'ratio_within_sla', sla_hours: 4, threshold: 0.95, period: 'monthly', penalty_type: 'percent_of_invoice', penalty_value: 2, jql_scope: 'project = "KEY" AND labels = intervention' } },
+  { key: 'repeat', label: 'Repeat-fault cap', hint: 'no more than N reopened faults per period', patch: { title: 'Repeat faults ≤ 3 per month', metric_type: 'count_max', threshold: 3, period: 'monthly', penalty_type: 'fixed', penalty_value: 8000, jql_scope: 'project = "KEY" AND labels = reopened' } },
+  { key: 'deliverable', label: 'Deliverable by a date', hint: 'a report or document due by a deadline', patch: { title: 'Monthly service report delivered by J+5', metric_type: 'deadline', period: 'monthly', penalty_type: 'fixed', penalty_value: 2500, jql_scope: 'project = "KEY" AND labels = reporting' } },
+  { key: 'volume', label: 'Minimum volume', hint: 'at least N preventive visits per period', patch: { title: 'At least 20 preventive visits per month', metric_type: 'count_min', threshold: 20, period: 'monthly', penalty_type: 'fixed', penalty_value: 1500, jql_scope: 'project = "KEY" AND labels = preventive AND statusCategory = Done' } },
+];
+
 const EMPTY = {
   contract_id: '', code: '', title: '', description: '', metric_type: 'ratio_within_sla', jql_scope: '',
   sla_hours: '', threshold: '', period: 'monthly', period_starts_on: '', period_ends_on: '',
@@ -124,6 +132,12 @@ function ObligationEditor({ initial, contracts, onClose, onSaved, notify }) {
   return (
     <Card title={form.id ? `Edit ${form.code}` : 'New obligation'} actions={<button className="linklike" onClick={onClose}>Close</button>}>
       <form className="form two-col" onSubmit={save}>
+        {!form.id && (
+          <div className="span2 templates">
+            <span className="muted small">Start from:</span>
+            {TEMPLATES.map((t) => <button key={t.key} type="button" className="chip" title={t.hint} onClick={() => setForm({ ...form, ...t.patch })}>{t.label}</button>)}
+          </div>
+        )}
         <Field label="Contract"><select value={form.contract_id} onChange={set('contract_id')}>{contracts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
         <Field label="Code" hint="short, e.g. O-3"><input value={form.code} onChange={set('code')} required /></Field>
         <Field label="Title" ><input className="span2" value={form.title} onChange={set('title')} required /></Field>
