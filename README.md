@@ -13,7 +13,7 @@ An Atlassian Forge app for Jira, Confluence and Rovo, built for **Codegeist 2026
 
 ```bash
 npm install && npm run install:ui
-npm test                      # 44 tests, offline, on the demo scenario
+npm test                      # 58 tests, offline, on the demo scenario
 npm run deploy:dev            # build the UI + forge deploy (development); deploy:prod for production
 forge install --upgrade --non-interactive -e development --site <site>.atlassian.net --product jira
 forge install --upgrade --non-interactive -e development --site <site>.atlassian.net --product confluence

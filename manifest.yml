@@ -63,6 +63,33 @@ modules:
         - record-decision
         - read-page-for-decision
         - record-obligation
+  # The same actions, exposed as MCP tools (Rovo Studio agents, and
+  # third-party MCP clients once an admin enables external exposure).
+  rovo:mcp:
+    - key: antemortem-mcp
+      name: Antemortem
+      tools:
+        - get-next-incident
+        - explain-obligation
+        - list-obligation-status
+        - list-corrective-actions
+        - read-page-for-decision
+        - record-decision
+        - record-obligation
+  # Instructions for agents (Rovo Studio) on when and how to use the tools.
+  rovo:skill:
+    - key: antemortem-forecasts
+      source:
+        dir: skills/antemortem-forecasts
+      dependencies:
+        tools:
+          - action: get-next-incident
+          - action: explain-obligation
+          - action: list-obligation-status
+          - action: list-corrective-actions
+          - action: read-page-for-decision
+          - action: record-decision
+          - action: record-obligation
   action:
     - key: read-page-for-decision
       name: Read a Confluence page to propose decisions or obligations

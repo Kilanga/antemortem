@@ -16,9 +16,12 @@ import { searchIssues, currentUserHasPermission } from '../jira/client.js';
  * calling user must be a Jira administrator. The agent's "ask the user to
  * confirm" is a convention, not a control; this is the control.
  */
+/** Overridable in tests; production always asks Jira. */
+export const deps = { hasPermission: currentUserHasPermission };
+
 async function requireAdmin() {
   let ok = false;
-  try { ok = await currentUserHasPermission('ADMINISTER'); } catch { ok = false; }
+  try { ok = await deps.hasPermission('ADMINISTER'); } catch { ok = false; }
   return ok ? null : { error: 'Only a Jira administrator can record this. Ask an admin, or use Antemortem in Jira (Apps → Antemortem).' };
 }
 
@@ -228,15 +231,8 @@ export async function recordObligation(payload) {
   const [contractName, counterpartyFromName] = String(p.contractName ?? '').split(' — ').map((x) => x.trim().slice(0, 255));
   if (!contractName) return { error: 'contractName is required.' };
   const counterparty = p.counterparty ? String(p.counterparty).slice(0, 255) : (counterpartyFromName || null);
-  const periodSpec = String(p.period ?? 'monthly').trim();
-  const periodMatch = periodSpec.match(/^custom\s+(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})$/i);
-  const period = periodMatch ? 'custom' : ['monthly', 'weekly', 'one_shot'].includes(periodSpec) ? periodSpec : 'monthly';
-  const penaltySpec = String(p.penalty ?? '').trim();
-  const fixed = penaltySpec.match(/^fixed\s+([\d.]+)$/i);
-  const percent = penaltySpec.match(/^percent\s+([\d.]+)\s+of\s+([\d.]+)$/i);
-  const penaltyType = fixed ? 'fixed' : percent ? 'percent_of_invoice' : (['fixed', 'percent_of_invoice'].includes(p.penaltyType) ? p.penaltyType : null);
-  const penaltyValue = fixed ? Number(fixed[1]) : percent ? Number(percent[1]) : (p.penaltyValue != null && p.penaltyValue !== '' ? Number(p.penaltyValue) : null);
-  const invoiceBasis = percent ? Number(percent[2]) : (p.invoiceBasis != null && p.invoiceBasis !== '' ? Number(p.invoiceBasis) : null);
+  const { period, periodMatch } = parsePeriod(p.period);
+  const { penaltyType, penaltyValue, invoiceBasis } = parsePenalty(p.penalty, p);
 
   let [contract] = await contracts.list({ where: 'name = ?', params: [contractName], limit: 1 });
   if (!contract) contract = await contracts.create({ name: contractName, counterparty, currency: p.currency ? String(p.currency).slice(0, 3).toUpperCase() : 'EUR', notes: sourceUrl ? `Recorded from ${sourceUrl}` : null });
@@ -270,6 +266,25 @@ export async function recordObligation(payload) {
   return {
     recorded: { id: saved.id, code, title, contract: contract.name, metric, scopeJql: row.jql_scope },
     note: row.jql_scope ? 'The scope JQL can be tested in Antemortem → Obligations → Edit → Test JQL. The next analysis measures it.' : 'No JQL scope: give it one in Antemortem → Obligations before the engine can measure this obligation.',
+  };
+}
+
+/** "monthly" | "weekly" | "one_shot" | "custom YYYY-MM-DD YYYY-MM-DD" */
+export function parsePeriod(spec) {
+  const s = String(spec ?? 'monthly').trim();
+  const periodMatch = s.match(/^custom\s+(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})$/i);
+  return { period: periodMatch ? 'custom' : ['monthly', 'weekly', 'one_shot'].includes(s) ? s : 'monthly', periodMatch };
+}
+
+/** "fixed <amount>" | "percent <value> of <invoice basis>" (legacy separate fields still accepted). */
+export function parsePenalty(spec, p = {}) {
+  const s = String(spec ?? '').trim();
+  const fixed = s.match(/^fixed\s+([\d.]+)$/i);
+  const percent = s.match(/^percent\s+([\d.]+)\s+of\s+([\d.]+)$/i);
+  return {
+    penaltyType: fixed ? 'fixed' : percent ? 'percent_of_invoice' : (['fixed', 'percent_of_invoice'].includes(p.penaltyType) ? p.penaltyType : null),
+    penaltyValue: fixed ? Number(fixed[1]) : percent ? Number(percent[1]) : (p.penaltyValue != null && p.penaltyValue !== '' ? Number(p.penaltyValue) : null),
+    invoiceBasis: percent ? Number(percent[2]) : (p.invoiceBasis != null && p.invoiceBasis !== '' ? Number(p.invoiceBasis) : null),
   };
 }
 
