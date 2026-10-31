@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.8.2 — contrôle complet (31 oct)
+
+- Nouveautés : obligations proposées par l'agent depuis une page de contrat (`record-obligation`) + modèles d'obligations ; gadget de tableau de bord Jira ; métrique `jsm_sla` (champs SLA de Jira Service Management via les fonctions JQL) ; README avec architecture et modèle de sécurité ; politique de confidentialité et CGU (`legal/`) ; distribution « Sharing with anyone » et lien d'installation ; dépôt public.
+- Revue sécurité (relecteur indépendant) : l'agent lisait les pages Confluence en tant qu'app et écrivait sans contrôle admin — corrigé (lecture en tant qu'utilisateur, garde admin, JQL validé pour l'utilisateur, URLs https seulement, web trigger en-tête + temps constant + anti-doublon, panneau issue limité aux tickets visibles).
+- Revue de préparation Forge : bug de priorité d'opérateurs dans `record-obligation` (seuil ÷ 100) ; analyse horaire passée par la file (15 min) avec garde ; purge des prévisions > 30 j ; lectures parallèles (macro, panneau) ; budget de temps du backtest ; scope `read:jira-user` retiré.
+- Chasse aux bugs de logique : incident écarté republié chaque heure (corrigé : reste écarté pour sa période) ; incident réel compté comme « évité » au début de la période suivante (corrigé : jugé à la date) ; page orpheline après une coupure (adoptée par titre) ; cache des pages parentes après reset (vérifie l'espace, vidé au reset) ; date de rupture des obligations « deadline » ; what-if qui basculait les hypothèses ébranlées non concernées ; plusieurs signaux d'un même type dans le récit ; « holds » affiché à tort après actions terminées ; fenêtre custom conservée après changement de période ; ticket passé Done par un juge qui disparaissait du ratio ; empreintes trop longues.
+- Non couvert par les tests : `reconcileIncident` (cycle de vie) et le chargeur de démo — à vérifier sur site après déploiement.
+
 ## 0.8.1 — vérification sur site (30 oct, soir)
 
 - Déployé v4.0.0 (version majeure : module `macro`, action Rovo). Vérifié sur `antemortem-dev` : publication Confluence sous *Projected incidents*, 5 tickets d'action NFS-91…95, panneau issue sur NFS-87, cycle *averted* (2 actions Done → page archivée sous *Averted incidents*, €40 000 évités), what-if et History sur données réelles, macro insérée depuis `/Antemortem`.
