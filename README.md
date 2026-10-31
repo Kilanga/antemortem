@@ -13,8 +13,8 @@ An Atlassian Forge app for Jira, Confluence and Rovo, built for **Codegeist 2026
 
 ```bash
 npm install && npm run install:ui
-npm test                      # 35 tests, offline, on the demo scenario
-npm run deploy:dev            # build the UI + forge deploy (development)
+npm test                      # 43 tests, offline, on the demo scenario
+npm run deploy:dev            # build the UI + forge deploy (development); deploy:prod for production
 forge install --upgrade --non-interactive -e development --site <site>.atlassian.net --product jira
 forge install --upgrade --non-interactive -e development --site <site>.atlassian.net --product confluence
 ```
@@ -30,7 +30,7 @@ src/index.js                 function entry points
 src/resolvers/               Custom UI resolvers (admin guard on writes)
 src/triggers/                install / hourly / webtrigger
 src/rovo/                    Rovo actions
-src/frontend/                UI Kit issue-context panel
+src/frontend/                UI Kit: issue panel, Confluence macro, dashboard gadget
 src/db/                      Forge SQL: migrations, runner, repositories
 src/graph/                   GraphSource abstraction (REST today, Teamwork Graph later)
 src/engine/                  metrics → signals → chain → forecast → narrative → publish
@@ -39,6 +39,51 @@ src/demo/                    demo scenario, async loader, reset
 static/command-center/       React 18 + Vite command center (mock mode for design)
 test/                        node --test, with an in-memory graph source
 ```
+
+## How it works
+
+```mermaid
+flowchart LR
+  subgraph Model["The three objects the platform lacks (Forge SQL)"]
+    C[Contract] --> O[Obligation<br/>metric · threshold · period · penalty · JQL scope]
+    O -. depends_on .-> D[Decision]
+    D -. rests_on .-> A[Assumption<br/>capacity · person · dependency · routing]
+  end
+  subgraph Graph["Work graph (GraphSource)"]
+    J[(Jira issues)]
+    K[(Confluence pages)]
+    V[(Availability)]
+  end
+  subgraph Engine["Engine — deterministic, every term printed"]
+    M[metrics] --> S[signal detectors]
+    A --> S
+    S --> F[forecast<br/>probability · cost · date]
+    F --> CH[causal chain]
+    CH --> N[narrative<br/>impact · root cause · timeline · actions]
+  end
+  O --> M
+  J --> M
+  J --> S
+  V --> S
+  N --> P[Confluence page<br/>dated in the future]
+  N --> I[Jira issues<br/>corrective actions]
+  I -- closed --> F
+  F -- below threshold --> AV[Averted incidents ledger]
+  F -. what-if / backtest .-> SIM[simulate.js<br/>as-of graph, evidence set aside]
+  subgraph Surfaces
+    CC[Command center<br/>Custom UI]
+    IP[Issue panel]
+    MG[Confluence macro]
+    DG[Dashboard gadget]
+    RV[Rovo agent<br/>7 actions]
+  end
+```
+
+**One analysis run** (`src/engine/index.js`, hourly, on demand, or from the web trigger): for each active obligation, `issuesInScope(jql)` → `computeMetric` → direct detectors (trend, stale critical issue, single point of failure, silent assignee) → `checkAssumption` for each assumption of the decisions it depends on → `computeForecast` (a transparent sum, bounded 0.05–0.98) → `buildChain` (dated evidence, root decision first) → `reconcileIncident`: publish when the probability crosses the threshold, update while it stays above, avert when it drops, reinstate when it comes back, materialize when the period closes breached.
+
+**What is deliberately not here**: a language model in the engine. Rovo is used only at the edges — the agent answers from the engine's data, and proposes decisions or obligations read from a page for the user to confirm.
+
+**Constraints that shaped the code**: Forge SQL is provisioned per installation (the Confluence macro reads the published pages rather than the Jira installation's database); resolvers have 25 s (publication runs in an async-events consumer); no foreign keys, no auto-increment (UUIDs, idempotent migrations re-checked hourly).
 
 ## Things learned the hard way
 
