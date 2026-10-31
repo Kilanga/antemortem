@@ -100,13 +100,13 @@ modules:
         dir: skills/antemortem-forecasts
       dependencies:
         tools:
-          - action: get-next-incident
-          - action: explain-obligation
-          - action: list-obligation-status
-          - action: list-corrective-actions
-          - action: read-page-for-decision
-          - action: record-decision
-          - action: record-obligation
+          - get-next-incident
+          - explain-obligation
+          - list-obligation-status
+          - list-corrective-actions
+          - read-page-for-decision
+          - record-decision
+          - record-obligation
   action:
     - key: read-page-for-decision
       name: Read a Confluence page to propose decisions or obligations
