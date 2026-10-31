@@ -16,7 +16,7 @@ Apps for Business Teams
 
 ## Bonus prize
 
-Best Agents — Rovo/Assignable agents (`rovo:agent` with six `action` modules, exposed to customer-built agents via `read:chat:rovo`)
+Best Agents — Rovo/Assignable agents (`rovo:agent` with seven `action` modules — five that read the engine's data, two that **write** after the user confirms: `record-decision` and `record-obligation`, both gated on Jira administrator)
 
 ## Inspiration
 
@@ -40,7 +40,7 @@ It meets people where they work: a command center in Jira, a panel on every issu
 
 ## How we built it
 
-Atlassian Forge, end to end. Forge SQL holds the model (11 tables, idempotent migrations applied on install and re-checked hourly). The engine runs on a scheduled trigger and on demand through an async-event queue (publishing pages and creating issues takes longer than a resolver's 25 s). Jira REST (enhanced JQL search, bulk create, transitions, issue properties, issue links) and Confluence REST v2 (pages) for the work graph; a `GraphSource` abstraction so Teamwork Graph can slot in. Custom UI (React + Vite, no external fonts) for the command center; UI Kit for the issue panel; `rovo:agent` with five actions; a token-protected web trigger for automation. A one-click demo scenario — ~90 issues with a six-week history, three steering-committee pages, one contract, four obligations, three decisions — so judges see the product on an empty site.
+Atlassian Forge, end to end. Forge SQL holds the model (11 tables, idempotent migrations applied on install and re-checked hourly). The engine runs on a scheduled trigger and on demand through an async-event queue (publishing pages and creating issues takes longer than a resolver's 25 s). Jira REST (enhanced JQL search, bulk create, transitions, issue properties, issue links) and Confluence REST v2 (pages) for the work graph; a `GraphSource` abstraction so Teamwork Graph can slot in. Custom UI (React + Vite, no external fonts) for the command center; UI Kit for the issue panel; `rovo:agent` with seven actions; a token-protected web trigger for automation. A one-click demo scenario — ~90 issues with a six-week history, three steering-committee pages, one contract, four obligations, three decisions — so judges see the product on an empty site.
 
 ## Challenges we ran into
 
@@ -60,7 +60,7 @@ Teamwork Graph as the graph source (calendars for availability, decisions discov
 
 ## How it meets the technology requirement
 
-Built on the Forge platform: `jira:globalPage` (Custom UI), `jira:issueContext` (UI Kit), `macro` (UI Kit, Confluence), `rovo:agent` + 6 `action` modules, `trigger` (install/upgrade), `scheduledTrigger`, `webtrigger`, `consumer` (async events), `sql` (Forge SQL), KVS. Integrates with Jira (issues, projects, links, properties, transitions, JQL), Confluence (spaces, pages) and Rovo.
+Built on the Forge platform: `jira:globalPage` (Custom UI), `jira:issueContext` (UI Kit), `macro` (UI Kit, Confluence), `jira:dashboardGadget` (UI Kit), `rovo:agent` + 7 `action` modules, `trigger` (install/upgrade), `scheduledTrigger`, `webtrigger`, `consumer` (async events), `sql` (Forge SQL), KVS. Integrates with Jira (issues, projects, links, properties, transitions, JQL), Confluence (spaces, pages) and Rovo.
 
 ## Links
 

@@ -3,7 +3,7 @@
   "version": "0.8.2",
   "description": "Antemortem writes your post-mortems before the incidents happen — Atlassian Forge app (Codegeist 2026)",
   "main": "index.js",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "test": "node --test \"test/**/*.test.mjs\"",
