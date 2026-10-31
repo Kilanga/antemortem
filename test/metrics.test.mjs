@@ -56,7 +56,7 @@ test('count_max and deadline metrics', () => {
 });
 
 test('stale critical issue and single point of failure detectors', () => {
-  const stale = issue({ lastActivityAt: new Date(now - 10 * 24 * H), dueAt: new Date(now + 24 * H) });
+  const stale = issue({ lastActivityAt: new Date(now - 10 * 24 * H), dueAt: new Date(now.getTime() + 24 * H) });
   assert.equal(detectStaleCriticalIssues({ obligation: ratioObl, issues: [stale], now })[0].type, 'stale_critical_issue');
   const held = ['a', 'b', 'c'].map((k) => issue({ key: `X-${k}`, people: ['label:tech-karim'] }));
   const [spof] = detectSinglePointOfFailure({ obligation: ratioObl, issues: [...held, issue({ key: 'X-d' })], now });
