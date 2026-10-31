@@ -173,12 +173,7 @@ modules:
           title: Contract name
           type: string
           required: true
-          description: Name of the contract (created if new).
-        counterparty:
-          title: Counterparty
-          type: string
-          required: false
-          description: The client or party the obligation is owed to.
+          description: Name of the contract (created if new). Append the counterparty after " — " if known.
         code:
           title: Code
           type: string
@@ -198,7 +193,7 @@ modules:
           title: SLA hours
           type: number
           required: false
-          description: For ratio_within_sla, the time limit in hours.
+          description: For ratio_within_sla or jsm_sla, the time limit / goal in hours.
         slaName:
           title: SLA name
           type: string
@@ -213,42 +208,19 @@ modules:
           title: Period
           type: string
           required: false
-          description: monthly (default), weekly, custom or one_shot.
-        periodStartsOn:
-          title: Period start
+          description: >-
+            monthly (default), weekly, one_shot, or "custom YYYY-MM-DD YYYY-MM-DD" with the window's start and end dates.
+        penalty:
+          title: Penalty
           type: string
           required: false
-          description: ISO date, for a custom period.
-        periodEndsOn:
-          title: Period end
-          type: string
-          required: false
-          description: ISO date, for a custom period.
-        penaltyType:
-          title: Penalty type
-          type: string
-          required: false
-          description: fixed or percent_of_invoice.
-        penaltyValue:
-          title: Penalty value
-          type: number
-          required: false
-          description: Amount for fixed; percentage for percent_of_invoice.
-        invoiceBasis:
-          title: Invoice basis
-          type: number
-          required: false
-          description: The invoice amount the percentage applies to.
+          description: >-
+            "fixed <amount>" (e.g. "fixed 5000"), or "percent <value> of <invoice basis>" (e.g. "percent 2 of 2000000").
         jqlScope:
           title: JQL scope
           type: string
           required: false
           description: The issues that feed the measure, e.g. project = "NFS" AND labels = lot-3 AND labels = intervention.
-        sourceUrl:
-          title: Source URL
-          type: string
-          required: false
-          description: The Confluence page the obligation comes from.
 
   # ---------------------------------------------------------------------------
   # Lifecycle — schema is applied at install time, and re-checked hourly

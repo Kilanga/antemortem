@@ -224,11 +224,22 @@ export async function recordObligation(payload) {
   if (!code || !title) return { error: 'code and title are required.' };
   const metric = ['ratio_within_sla', 'jsm_sla', 'count_max', 'count_min', 'deadline'].includes(p.metricType) ? p.metricType : null;
   if (!metric) return { error: 'metricType must be ratio_within_sla, jsm_sla, count_max, count_min or deadline.' };
-  const contractName = String(p.contractName ?? '').trim().slice(0, 255);
+  // Ten inputs at most per Rovo action: a few are packed into strings.
+  const [contractName, counterpartyFromName] = String(p.contractName ?? '').split(' — ').map((x) => x.trim().slice(0, 255));
   if (!contractName) return { error: 'contractName is required.' };
+  const counterparty = p.counterparty ? String(p.counterparty).slice(0, 255) : (counterpartyFromName || null);
+  const periodSpec = String(p.period ?? 'monthly').trim();
+  const periodMatch = periodSpec.match(/^custom\s+(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})$/i);
+  const period = periodMatch ? 'custom' : ['monthly', 'weekly', 'one_shot'].includes(periodSpec) ? periodSpec : 'monthly';
+  const penaltySpec = String(p.penalty ?? '').trim();
+  const fixed = penaltySpec.match(/^fixed\s+([\d.]+)$/i);
+  const percent = penaltySpec.match(/^percent\s+([\d.]+)\s+of\s+([\d.]+)$/i);
+  const penaltyType = fixed ? 'fixed' : percent ? 'percent_of_invoice' : (['fixed', 'percent_of_invoice'].includes(p.penaltyType) ? p.penaltyType : null);
+  const penaltyValue = fixed ? Number(fixed[1]) : percent ? Number(percent[1]) : (p.penaltyValue != null && p.penaltyValue !== '' ? Number(p.penaltyValue) : null);
+  const invoiceBasis = percent ? Number(percent[2]) : (p.invoiceBasis != null && p.invoiceBasis !== '' ? Number(p.invoiceBasis) : null);
 
   let [contract] = await contracts.list({ where: 'name = ?', params: [contractName], limit: 1 });
-  if (!contract) contract = await contracts.create({ name: contractName, counterparty: p.counterparty ? String(p.counterparty).slice(0, 255) : null, currency: p.currency ? String(p.currency).slice(0, 3).toUpperCase() : 'EUR', notes: sourceUrl ? `Recorded from ${sourceUrl}` : null });
+  if (!contract) contract = await contracts.create({ name: contractName, counterparty, currency: p.currency ? String(p.currency).slice(0, 3).toUpperCase() : 'EUR', notes: sourceUrl ? `Recorded from ${sourceUrl}` : null });
 
   const [dup] = await obligations.list({ where: 'code = ? AND contract_id = ?', params: [code, contract.id], limit: 1 });
   if (dup) return { error: `${code} already exists on this contract (${dup.title}).` };
@@ -247,12 +258,12 @@ export async function recordObligation(payload) {
     sla_hours: p.slaHours != null && p.slaHours !== '' ? Number(p.slaHours) : null,
     sla_name: p.slaName ? String(p.slaName).slice(0, 255) : null,
     threshold: (metric === 'ratio_within_sla' || metric === 'jsm_sla') && threshold != null && threshold > 1 ? threshold / 100 : threshold,
-    period: ['monthly', 'weekly', 'custom', 'one_shot'].includes(p.period) ? p.period : 'monthly',
-    period_starts_on: p.periodStartsOn && !Number.isNaN(Date.parse(p.periodStartsOn)) ? String(p.periodStartsOn).slice(0, 10) : null,
-    period_ends_on: p.periodEndsOn && !Number.isNaN(Date.parse(p.periodEndsOn)) ? String(p.periodEndsOn).slice(0, 10) : null,
-    penalty_type: ['fixed', 'percent_of_invoice'].includes(p.penaltyType) ? p.penaltyType : null,
-    penalty_value: p.penaltyValue != null && p.penaltyValue !== '' ? Number(p.penaltyValue) : null,
-    invoice_basis: p.invoiceBasis != null && p.invoiceBasis !== '' ? Number(p.invoiceBasis) : null,
+    period,
+    period_starts_on: periodMatch ? periodMatch[1] : null,
+    period_ends_on: periodMatch ? periodMatch[2] : null,
+    penalty_type: penaltyType,
+    penalty_value: penaltyValue,
+    invoice_basis: invoiceBasis,
     status: 'active',
   };
   const saved = await obligations.create(row);
