@@ -63,6 +63,23 @@ modules:
         - record-decision
         - read-page-for-decision
         - record-obligation
+  # Outbound Teamwork Graph: obligations, decisions and projected incidents
+  # published as documents so Rovo Search and other apps can find them.
+  graph:connector:
+    - key: antemortem-graph
+      name: Antemortem
+      capabilities:
+        replicatesPermissions: false
+        syncFidelity: mirror
+        supportsIncrementalSync: false
+      icons:
+        light: https://raw.githubusercontent.com/Kilanga/antemortem/main/assets/gadget.png
+        dark: https://raw.githubusercontent.com/Kilanga/antemortem/main/assets/gadget.png
+      objectTypes:
+        - atlassian:document
+      datasource:
+        onConnectionChange:
+          function: graph-connection
   # The same actions, exposed as MCP tools (Rovo Studio agents, and
   # third-party MCP clients once an admin enables external exposure).
   rovo:mcp:
@@ -312,6 +329,8 @@ modules:
       handler: index.readPageForDecision
     - key: rovo-record-obligation
       handler: index.recordObligation
+    - key: graph-connection
+      handler: index.onGraphConnectionChange
 
 resources:
   - key: command-center
@@ -331,6 +350,10 @@ permissions:
     # Jira — reading the work graph, creating corrective actions, and (demo
     # loader only) creating/deleting the NFS project.
     - read:jira-work
+    # Teamwork Graph connector (outbound objects)
+    - read:object:jira
+    - write:object:jira
+    - delete:object:jira
     - write:jira-work
     - manage:jira-configuration
     # Confluence — publishing projected incidents (v2 pages API, granular)

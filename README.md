@@ -6,6 +6,7 @@ An Atlassian Forge app for Jira, Confluence and Rovo, built for **Codegeist 2026
 
 - **Project book (French):** [BUILD.md](BUILD.md) — concept, architecture, data model, engine, demo scenario, plan.
 - **For judges (English):** [JUDGE_INSTRUCTIONS.md](JUDGE_INSTRUCTIONS.md) — install and test in 10 minutes.
+- **Platform surfaces:** Jira global page (Custom UI), issue panel, dashboard gadget, Confluence macro, Rovo agent with 7 actions, the same actions as **MCP tools** (`rovo:mcp`), a **skill** for Rovo Studio agents (`rovo:skill`), an outbound **Teamwork Graph connector** that publishes obligations, decisions and projected incidents as searchable documents, a web trigger, an hourly schedule.
 - **What it does, in one screen:** obligations, decisions with typed assumptions, an explainable forecast, a post-mortem published in the future, what-if and history on the causal chain, a portfolio across contracts, an issue panel, a Confluence macro and a Rovo agent that proposes decisions from pages.
 - **Submission text:** [DEVPOST.md](DEVPOST.md). **Video plan:** [DEMO_SCRIPT.md](DEMO_SCRIPT.md). **History:** [CHANGELOG.md](CHANGELOG.md). **Out of scope:** [BACKLOG.md](BACKLOG.md).
 
@@ -13,7 +14,7 @@ An Atlassian Forge app for Jira, Confluence and Rovo, built for **Codegeist 2026
 
 ```bash
 npm install && npm run install:ui
-npm test                      # 58 tests, offline, on the demo scenario
+npm test                      # 59 tests, offline, on the demo scenario
 npm run deploy:dev            # build the UI + forge deploy (development); deploy:prod for production
 forge install --upgrade --non-interactive -e development --site <site>.atlassian.net --product jira
 forge install --upgrade --non-interactive -e development --site <site>.atlassian.net --product confluence
@@ -75,8 +76,9 @@ flowchart LR
     IP[Issue panel]
     MG[Confluence macro]
     DG[Dashboard gadget]
-    RV[Rovo agent<br/>7 actions]
+    RV[Rovo agent · MCP tools · skill<br/>7 actions]
   end
+  O & D & P --> TWG[(Teamwork Graph<br/>outbound connector)]
 ```
 
 **One analysis run** (`src/engine/index.js`, hourly, on demand, or from the web trigger): for each active obligation, `issuesInScope(jql)` → `computeMetric` → direct detectors (trend, stale critical issue, single point of failure, silent assignee) → `checkAssumption` for each assumption of the decisions it depends on → `computeForecast` (a transparent sum, bounded 0.05–0.98) → `buildChain` (dated evidence, root decision first) → `reconcileIncident`: publish when the probability crosses the threshold, update while it stays above, avert when it drops, reinstate when it comes back, materialize when the period closes breached.

@@ -13,6 +13,7 @@ import { insert, updateById, query, execute, toSqlDateTime } from '../db/client.
 import { obligations, decisions as decisionsRepo, assumptions as assumptionsRepo, signals as signalsRepo, forecasts as forecastsRepo, actionItems, futureIncidents } from '../db/repo/index.js';
 import { getSettings } from '../settings.js';
 import { getProgress } from '../demo/seed.js';
+import { syncGraph } from '../graph/connector.js';
 import { graphSourceFor } from '../graph/index.js';
 import { analyseObligation } from './analyse.js';
 import { reconcileIncident, syncActionStatuses } from './publish.js';
@@ -98,6 +99,9 @@ export async function runAnalysis({ source = 'manual', now = new Date() } = {}) 
         if (entry) entry.incident = `error: ${String(err?.message ?? err)}`;
       }
     }
+
+    // Outbound Teamwork Graph (only when a connection exists).
+    try { summary.graph = await syncGraph({ now }); } catch (err) { summary.graph = { error: String(err?.message ?? err) }; }
 
     // Keep the forecast table bounded: superseded rows older than 30 days go.
     await execute('DELETE FROM forecast WHERE superseded_by IS NOT NULL AND computed_at < ?', [toSqlDateTime(new Date(now.getTime() - 30 * 86400_000))]).catch((e) => console.warn('[antemortem] prune failed', e?.message));

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.9.0 — plateforme (31 oct, soir)
+
+- D'après la veille concurrentielle : `rovo:mcp` (les 7 actions en outils MCP), `rovo:skill` + `skills/antemortem-forecasts/SKILL.md`, **connecteur Teamwork Graph sortant** (`graph:connector` : obligations, décisions, incidents projetés/évités publiés en documents après chaque analyse), LICENSE MIT, Devpost aligné (7 actions, gadget).
+- Tests 45 → 59 : détecteurs directs, les quatre contrôles d'hypothèses, arithmétique de la prévision, autorisation admin des actions de l'agent (fail-closed), empaquetage période/pénalité, URLs https, objets du graphe.
+- Course reset de démo / analyse horaire : moteur bloqué pendant un chargement ou un reset, balayage des orphelins, incidents sans obligation masqués.
+
 ## 0.8.2 — contrôle complet (31 oct)
 
 - Nouveautés : obligations proposées par l'agent depuis une page de contrat (`record-obligation`) + modèles d'obligations ; gadget de tableau de bord Jira ; métrique `jsm_sla` (champs SLA de Jira Service Management via les fonctions JQL) ; README avec architecture et modèle de sécurité ; politique de confidentialité et CGU (`legal/`) ; distribution « Sharing with anyone » et lien d'installation ; dépôt public.

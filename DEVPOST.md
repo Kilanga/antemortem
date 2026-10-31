@@ -36,6 +36,8 @@ An explainable engine (no language model anywhere) measures each obligation, che
 
 Because the engine is deterministic, it can be replayed: **what-if** recomputes the probability with any piece of evidence set aside ("if the engineer came back?"), and **history** replays the period day by day to show when the forecast crossed the line — the backtest judges would ask for. A **portfolio** view sums the exposure across contracts.
 
+It also gives its objects back to the platform: an outbound Teamwork Graph connector publishes every obligation, decision and projected incident as a searchable document, so Rovo Search, Rovo Chat and other apps can find "what the contract requires" and "what we decided" next to the work. The same seven actions are exposed as MCP tools and packaged as a skill for Rovo Studio agents.
+
 It meets people where they work: a command center in Jira, a panel on every issue showing which obligation it feeds and which projected incident it appears in, a Confluence macro that puts the projected incidents on the contract page, and a Rovo agent that answers "what is my next post-mortem?" strictly from the engine's data. The agent is also the entry door: point it at steering-committee minutes and it proposes the decision and its typed assumptions; nothing is recorded until the user confirms, and the engine never sees a language model.
 
 ## How we built it
@@ -56,11 +58,11 @@ That the shape of the output matters as much as the model: a risk score is ignor
 
 ## What's next
 
-Teamwork Graph as the graph source (calendars for availability, decisions discovered from pages without being pointed at them); what-if on dates ("if we move this delivery by two weeks, which obligations break?"); a calibration ledger once real history accumulates (predicted, happened, averted); and the outbound side — publishing obligations, decisions and projected incidents into the graph for other apps to use.
+Teamwork Graph as the graph *source* too (calendars for availability, decisions discovered from pages without being pointed at them — the outbound side ships today); what-if on dates ("if we move this delivery by two weeks, which obligations break?"); a calibration ledger once real history accumulates (predicted, happened, averted); and relationships in the graph between the published objects and the Jira issues they rest on.
 
 ## How it meets the technology requirement
 
-Built on the Forge platform: `jira:globalPage` (Custom UI), `jira:issueContext` (UI Kit), `macro` (UI Kit, Confluence), `jira:dashboardGadget` (UI Kit), `rovo:agent` + 7 `action` modules, `trigger` (install/upgrade), `scheduledTrigger`, `webtrigger`, `consumer` (async events), `sql` (Forge SQL), KVS. Integrates with Jira (issues, projects, links, properties, transitions, JQL), Confluence (spaces, pages) and Rovo.
+Built on the Forge platform: `jira:globalPage` (Custom UI), `jira:issueContext` (UI Kit), `macro` (UI Kit, Confluence), `jira:dashboardGadget` (UI Kit), `rovo:agent` + 7 `action` modules, `rovo:mcp`, `rovo:skill`, `graph:connector` (outbound Teamwork Graph), `trigger` (install/upgrade), `scheduledTrigger`, `webtrigger`, `consumer` (async events), `sql` (Forge SQL), KVS. Integrates with Jira (issues, projects, links, properties, transitions, JQL), Confluence (spaces, pages) and Rovo.
 
 ## Links
 

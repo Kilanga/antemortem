@@ -56,6 +56,8 @@ The demo data is relative to the moment it was loaded; figures below are what yo
 - **Issue panel**: open issue **NFS-87** (*Site access badges*). The *Antemortem* panel on the right shows the broken assumption it is part of, the decision behind it and the projected incident it appears in.
 - **Rovo agent** *(requires Rovo Chat on the site — skip otherwise)*: open Rovo chat, pick the **Antemortem** agent and ask *"What is my next post-mortem?"* or *"Why is O-3 at risk?"*. The agent answers only from the engine's data through its actions (no invented figures). If you averted the incident in step 5, it says so and names the last averted incident.
 - **Decisions from a page** *(requires Rovo Chat)*: paste the URL of the *D-7* steering-committee page (space ANTE) to the agent and ask it to record the decision. It reads the page, proposes the decision and typed assumptions, and records nothing until you confirm. The engine stays deterministic: the agent only helps with data entry.
+- **Teamwork Graph** *(requires Rovo)*: in Atlassian Administration → Apps → Connected apps, connect Antemortem; the obligations, decisions and the projected incident become searchable documents in Rovo Search ("what does the contract require for lot 3?").
+- **MCP tools**: the seven agent actions are also exposed as MCP tools (`rovo:mcp`) for Rovo Studio agents and, once an admin enables external exposure, for any MCP client at `https://mcp.atlassian.com/forge/29a1ae10-bc1f-4027-a192-00aa16fa9d20`.
 - **Confluence macro**: edit any page in space ANTE, type `/Antemortem` and insert the macro: the projected incidents, their probability and cost, on the page where the contract lives.
 
 ## 7. Clean up
