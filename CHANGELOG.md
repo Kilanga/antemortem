@@ -1,8 +1,14 @@
 # CHANGELOG
 
+## 0.9.1 — docs (31 oct, nuit)
+
+- Texte de soumission : trois bonus déclarés (agents, MCP, Teamwork Graph) ; `replicatesPermissions: false` justifié dans README et instructions juges.
+- Mode discret jusqu'à la soumission : aucune mention du concours dans les fichiers indexés (README, package.json, CGU, BUILD), texte de soumission sorti du dépôt (`.submission/`, ignoré par git) — à remettre le jour de la soumission.
+- Note de calendrier : essai Premium à lancer au plus tard le 1er déc., Rovo Chat à vérifier plusieurs jours avant le tournage.
+
 ## 0.9.0 — plateforme (31 oct, soir)
 
-- D'après la veille concurrentielle : `rovo:mcp` (les 7 actions en outils MCP), `rovo:skill` + `skills/antemortem-forecasts/SKILL.md`, **connecteur Teamwork Graph sortant** (`graph:connector` : obligations, décisions, incidents projetés/évités publiés en documents après chaque analyse), LICENSE MIT, Devpost aligné (7 actions, gadget).
+- D'après la veille concurrentielle : `rovo:mcp` (les 7 actions en outils MCP), `rovo:skill` + `skills/antemortem-forecasts/SKILL.md`, **connecteur Teamwork Graph sortant** (`graph:connector` : obligations, décisions, incidents projetés/évités publiés en documents après chaque analyse), LICENSE MIT, texte de soumission aligné (7 actions, gadget).
 - Tests 45 → 59 : détecteurs directs, les quatre contrôles d'hypothèses, arithmétique de la prévision, autorisation admin des actions de l'agent (fail-closed), empaquetage période/pénalité, URLs https, objets du graphe.
 - Course reset de démo / analyse horaire : moteur bloqué pendant un chargement ou un reset, balayage des orphelins, incidents sans obligation masqués.
 

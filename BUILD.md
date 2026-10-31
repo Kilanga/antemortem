@@ -1,4 +1,4 @@
-# ANTEMORTEM — Codegeist 2026 Build Book
+# ANTEMORTEM — Build Book
 
 > *This app writes your post-mortems before the incidents happen — then helps you make sure they never get written for real.*
 
@@ -66,7 +66,7 @@ Le post-mortem du futur est la surface visible de ces trois objets. Le vrai trav
 L'API de lecture du graphe (`requestTeamworkGraph`, scopes `read:graph:jira` / `read:graph:confluence`) est en Early Access : il faut être accepté via un formulaire, et Atlassian demande de n'installer ces apps que sur des organisations de test. Le hackathon propose pourtant un bonus TWG, donc l'accès est vraisemblablement ouvert aux participants, mais **ce n'est pas garanti ni daté**.
 
 Mitigation :
-- **Jour 1** : remplir le formulaire EAP TWG (lien dans la doc « Teamwork Graph API reference overview ») ET poster sur community.developer.atlassian.com avec le tag `codegeist-2026` pour demander la procédure d'accès pour les participants.
+- **Jour 1** : remplir le formulaire EAP TWG (lien dans la doc « Teamwork Graph API reference overview ») ET poster sur community.developer.atlassian.com avec le tag du concours pour demander la procédure d'accès pour les participants.
 - **Architecture** : toute lecture du graphe passe par une interface `GraphSource` (§6.1) avec deux implémentations : `TwgGraphSource` (Cypher via TWG) et `RestGraphSource` (Jira/Confluence REST + notre propre table de liens). L'app est complète avec la seconde ; la première est un plus.
 - Si l'accès arrive tard ou pas du tout : bonus **Best Agents (Rovo)**, qui est GA, et le pitch TWG devient « Antemortem construit son propre sous-graphe causal ». Ce qui est vrai et défendable.
 
@@ -85,10 +85,10 @@ Mitigation :
 ## 3. Mise en route (jour 1, ~2 heures)
 
 ### 3.1 Comptes et accès
-1. Compte Devpost → **Join hackathon** sur codegeist2026.devpost.com (chaque membre).
+1. Compte sur la plateforme du concours → inscription (chaque membre).
 2. **Atlassian Cloud Developer License** (go.atlassian.com/cloud-dev) → un site de dev avec Jira, JSM et Confluence. Activer Rovo sur ce site (admin → Atlassian Intelligence / Rovo).
 3. Un **second site vierge** (ou un second compte dev) réservé aux tests d'installation « comme un juge ». Ne jamais développer dessus.
-4. Formulaire EAP Teamwork Graph + question sur la communauté (tag `codegeist-2026`).
+4. Formulaire EAP Teamwork Graph + question sur la communauté (tag du concours).
 5. Dépôt Git privé. Branches : `main` (toujours déployable en `development`), `feat/*`.
 
 ### 3.2 Outillage local
@@ -367,7 +367,7 @@ Le même scénario sert aux tests automatisés du moteur (snapshot du post-morte
 
 ## 9. Plan sur 8 semaines (29 oct → 22 déc)
 
-**État au 30 oct** : semaines 1–3 livrées et vérifiées sur site ; semaines 4–7 livrées dans le dépôt (narratif, publication, cycle de vie, agent Rovo, panneau, durcissement, instructions juges, script vidéo, passage design), puis v0.7 (passe de densité) et v0.8 (what-if, history/backtest, détecteur `person_silent`, Portfolio, macro Confluence, décisions proposées depuis une page par l'agent) — **le tout en attente de déploiement et de vérification sur site** (version majeure : nouveau module `macro`, nouvelle action Rovo). Puis (30 oct, soir) : déployé en dev **et en production**, vérifié de bout en bout sur `antemortem-dev` et test juge réussi sur `arnaudlothe` (site vierge). Rovo Chat absent des deux sites (Standard gratuit : Rovo exige un plan payant) → l'agent est le seul module non vu en vrai. **Décision** : l'agent reste dans la vidéo ; test obligatoire sur un essai Premium 14 jours (`arnaudlothe`) à lancer vers le 1er décembre, et le bonus Rovo n'est déclaré que si l'agent a tourné correctement. Reste : lien d'installation (distribution), vidéo, soumission.
+**État au 30 oct** : semaines 1–3 livrées et vérifiées sur site ; semaines 4–7 livrées dans le dépôt (narratif, publication, cycle de vie, agent Rovo, panneau, durcissement, instructions juges, script vidéo, passage design), puis v0.7 (passe de densité) et v0.8 (what-if, history/backtest, détecteur `person_silent`, Portfolio, macro Confluence, décisions proposées depuis une page par l'agent) — **le tout en attente de déploiement et de vérification sur site** (version majeure : nouveau module `macro`, nouvelle action Rovo). Puis (30 oct, soir) : déployé en dev **et en production**, vérifié de bout en bout sur `antemortem-dev` et test juge réussi sur `arnaudlothe` (site vierge). Rovo Chat absent des deux sites (Standard gratuit : Rovo exige un plan payant) → l'agent est le seul module non vu en vrai. **Décision** : l'agent reste dans la vidéo ; test obligatoire sur un essai Premium 14 jours (`arnaudlothe`) à lancer vers le 1er décembre, et le bonus Rovo n'est déclaré que si l'agent a tourné correctement. *(31 oct : deux fils communauté signalent Rovo Chat absent même sur des essais Premium récents — lancer l'essai au plus tard le 1er déc. et vérifier Rovo Chat plusieurs jours avant le tournage, pas la veille ; prévoir la vidéo sans agent si besoin.)* Reste : lien d'installation (distribution), vidéo, soumission.
 
 Chaque semaine se termine par : déploiement sur le site de dev, **installation depuis zéro sur le site vierge**, et une courte note dans `CHANGELOG.md`. Règle : à tout moment, `main` doit produire une app installable qui fait *quelque chose* de montrable.
 
@@ -380,7 +380,7 @@ Chaque semaine se termine par : déploiement sur le site de dev, **installation 
 | 5 | 24 – 30 nov | Rovo agent + actions ; `TwgGraphSource` si EAP ; issue panel ; **écriture du script vidéo** | Agent répond à *what is my next post-mortem?* ; panel visible sur NFS-118 |
 | 6 | 1 – 7 déc | Design pass complet du command center et de la vue post-mortem ; états vides ; Settings ; **gel du périmètre** ; choix du bonus | Parcours complet sans friction, sur un site vierge, par quelqu'un qui n'a pas développé |
 | 7 | 8 – 14 déc | Durcissement : erreurs, permissions, perf des requêtes Jira (pagination, champs), `JUDGE_INSTRUCTIONS.md`, lien d'installation, **tournage vidéo** | Installation par un tiers en < 10 min en suivant les instructions ; rushes vidéo prêts |
-| 8 | 15 – 22 déc | Montage, description Devpost, **soumission le 15**, puis corrections mineures tolérées par les règles (on ne touche plus au code après soumission) | Soumission validée ; swag réclamé |
+| 8 | 15 – 22 déc | Montage, description de la soumission, **soumission le 15**, puis corrections mineures tolérées par les règles (on ne touche plus au code après soumission) | Soumission validée ; swag réclamé |
 
 Répartition suggérée si vous êtes deux : A = moteur + modèle + Confluence/Jira ; B = Custom UI + démo + Rovo + vidéo. Si vous êtes trois : C = `GraphSource` TWG + issue panel + instructions juges + tests d'installation. Seul : suivre le tableau tel quel, en coupant `rovo:mcp` et l'option LLM d'emblée.
 
@@ -397,7 +397,7 @@ Répartition suggérée si vous êtes deux : A = moteur + modèle + Confluence/J
 - [ ] Aucune clé API, aucun service externe requis
 - [ ] Données de démo 100 % fictives, aucun logo ni nom réel
 
-**`JUDGE_INSTRUCTIONS.md`** (copié dans le champ *Testing instructions* de Devpost)
+**`JUDGE_INSTRUCTIONS.md`** (copié dans le champ *Testing instructions* de la soumission)
 - [ ] Prérequis : site Jira + Confluence, Rovo activé (comment), droits admin
 - [ ] Étapes numérotées : installer via le lien (Jira puis Confluence), ouvrir Settings, choisir espace/projet, *Load demo scenario*, *Run analysis now*, ouvrir le post-mortem, faire 2 actions, relancer, voir *Averted*
 - [ ] Ce qu'il faut regarder pour le bonus choisi (où est l'agent / où est l'appel TWG)
@@ -409,7 +409,7 @@ Répartition suggérée si vous êtes deux : A = moteur + modèle + Confluence/J
 - [ ] Pas de musique protégée (musique libre de droits ou aucune), pas de marque tierce visible (masquer les favoris, onglets, noms de sites)
 - [ ] Sous-titres anglais (accent + débit : les sous-titres aident toujours)
 
-**Devpost**
+**Soumission**
 - [ ] Titre, tagline (la phrase du §0), description (§12), catégorie, bonus (un seul), lien vidéo, lien d'installation, instructions, 4–5 captures
 - [ ] Champ « how it meets the technology requirement » rempli avec la liste des modules Forge et des APIs
 - [ ] Représentant de l'équipe désigné ; répartition du prix convenue par écrit entre membres
@@ -434,7 +434,7 @@ Tournage : écran 1920×1080, zoom navigateur 110 %, curseur visible, pas de not
 
 ---
 
-## 12. Texte Devpost (brouillon, anglais)
+## 12. Texte de soumission (brouillon, anglais)
 
 **Tagline** — *Antemortem writes your post-mortems before the incidents happen — then helps you make sure they never get written for real.*
 

@@ -1,7 +1,7 @@
 {
   "name": "antemortem",
   "version": "0.9.0",
-  "description": "Antemortem writes your post-mortems before the incidents happen — Atlassian Forge app (Codegeist 2026)",
+  "description": "Antemortem writes your post-mortems before the incidents happen — Atlassian Forge app for Jira, Confluence and Rovo",
   "main": "index.js",
   "license": "MIT",
   "private": true,

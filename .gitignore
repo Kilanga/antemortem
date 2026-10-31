@@ -61,3 +61,4 @@ Thumbs.db
 # Local build output of the command center
 /static/command-center/dist/
 security-audit-artifacts/
+.submission/

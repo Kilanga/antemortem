@@ -2,13 +2,13 @@
 
 > Antemortem writes your post-mortems before the incidents happen — then helps you make sure they never get written for real.
 
-An Atlassian Forge app for Jira, Confluence and Rovo, built for **Codegeist 2026**. It gives an organisation three objects the platform does not have — contractual **obligations**, **decisions with the assumptions they rest on**, and the **causal links** between them and the work — and an explainable engine that, when a breach becomes likely, writes the post-mortem of that incident in Confluence, dated in the future, with every line linked to evidence that exists today. Corrective actions become Jira issues; when they bring the forecast down, the page archives itself under *Averted incidents* with the penalty it avoided.
+An Atlassian Forge app for Jira, Confluence and Rovo. It gives an organisation three objects the platform does not have — contractual **obligations**, **decisions with the assumptions they rest on**, and the **causal links** between them and the work — and an explainable engine that, when a breach becomes likely, writes the post-mortem of that incident in Confluence, dated in the future, with every line linked to evidence that exists today. Corrective actions become Jira issues; when they bring the forecast down, the page archives itself under *Averted incidents* with the penalty it avoided.
 
 - **Project book (French):** [BUILD.md](BUILD.md) — concept, architecture, data model, engine, demo scenario, plan.
 - **For judges (English):** [JUDGE_INSTRUCTIONS.md](JUDGE_INSTRUCTIONS.md) — install and test in 10 minutes.
 - **Platform surfaces:** Jira global page (Custom UI), issue panel, dashboard gadget, Confluence macro, Rovo agent with 7 actions, the same actions as **MCP tools** (`rovo:mcp`), a **skill** for Rovo Studio agents (`rovo:skill`), an outbound **Teamwork Graph connector** that publishes obligations, decisions and projected incidents as searchable documents, a web trigger, an hourly schedule.
 - **What it does, in one screen:** obligations, decisions with typed assumptions, an explainable forecast, a post-mortem published in the future, what-if and history on the causal chain, a portfolio across contracts, an issue panel, a Confluence macro and a Rovo agent that proposes decisions from pages.
-- **Submission text:** [DEVPOST.md](DEVPOST.md). **Video plan:** [DEMO_SCRIPT.md](DEMO_SCRIPT.md). **History:** [CHANGELOG.md](CHANGELOG.md). **Out of scope:** [BACKLOG.md](BACKLOG.md).
+- **Video plan:** [DEMO_SCRIPT.md](DEMO_SCRIPT.md). **History:** [CHANGELOG.md](CHANGELOG.md). **Out of scope:** [BACKLOG.md](BACKLOG.md).
 
 ## Develop
 
@@ -94,6 +94,7 @@ flowchart LR
 - Only `https://` URLs are stored as sources (they end up in `href` attributes); everything written to Confluence storage format goes through one escaper.
 - SQL is always prepared with bound parameters; column names come from an allow-list.
 - No egress: no `permissions.external`, no remotes, no external scripts or fonts. Forge storage only.
+- The Teamwork Graph connector publishes with `replicatesPermissions: false` on purpose: the documents it emits are the app's own summaries (an obligation, a decision, a projected incident), visible to the same people as the command center, and they name people only through the Jira issues they link to. Per-document permissions would add nothing the Jira and Confluence links do not already enforce.
 - `manage:jira-configuration` and `write:confluence-space` exist only for the demo loader (create/delete the demo project and space).
 
 A white-box review (scopes, authz, injection, storage escaping, web trigger, tenant isolation) was run before submission; the two findings it produced — agent page reads as app, agent writes without the admin check — are fixed above.
