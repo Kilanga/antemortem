@@ -70,10 +70,13 @@ export async function simulateObligation({ obligation, decisions, graph, asOf, w
  * from `from` to `now`. Returns the curve and the first date the forecast
  * crossed the publish threshold.
  */
-export async function backtest({ obligation, decisions, graph, now = new Date(), days = 35, stepDays = 5, threshold = 0.6 }) {
+export async function backtest({ obligation, decisions, graph, now = new Date(), days = 35, stepDays = 5, threshold = 0.6, budgetMs = 18_000 }) {
   const memo = new MemoGraphSource(graph);
   const points = [];
+  const t0 = Date.now();
+  let truncated = false;
   for (let back = days; back >= 0; back -= stepDays) {
+    if (Date.now() - t0 > budgetMs && back > 0) { truncated = true; back = 0; } // always finish with today
     const asOf = new Date(now.getTime() - back * DAY);
     const r = await simulateObligation({ obligation, decisions, graph: memo, asOf, now });
     const signals = [...r.directSignals, ...r.assumptionSignals].map((s) => s.type);
@@ -81,7 +84,7 @@ export async function backtest({ obligation, decisions, graph, now = new Date(),
   }
   const first = points.find((p) => p.probability >= threshold) ?? null;
   const breach = points[points.length - 1];
-  return { points, threshold, firstAbove: first ? first.at : null, leadDays: first && breach ? daysBetween(first.at, (await lastBreachDate(obligation, decisions, memo, now))) : null };
+  return { points, threshold, truncated, firstAbove: first ? first.at : null, leadDays: first && breach ? daysBetween(first.at, (await lastBreachDate(obligation, decisions, memo, now))) : null };
 }
 
 async function lastBreachDate(obligation, decisions, graph, now) {

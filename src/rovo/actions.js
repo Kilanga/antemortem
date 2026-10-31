@@ -246,7 +246,7 @@ export async function recordObligation(payload) {
     jql_scope: jqlScope,
     sla_hours: p.slaHours != null && p.slaHours !== '' ? Number(p.slaHours) : null,
     sla_name: p.slaName ? String(p.slaName).slice(0, 255) : null,
-    threshold: metric === 'ratio_within_sla' || metric === 'jsm_sla' && threshold != null && threshold > 1 ? threshold / 100 : threshold,
+    threshold: (metric === 'ratio_within_sla' || metric === 'jsm_sla') && threshold != null && threshold > 1 ? threshold / 100 : threshold,
     period: ['monthly', 'weekly', 'custom', 'one_shot'].includes(p.period) ? p.period : 'monthly',
     period_starts_on: p.periodStartsOn && !Number.isNaN(Date.parse(p.periodStartsOn)) ? String(p.periodStartsOn).slice(0, 10) : null,
     period_ends_on: p.periodEndsOn && !Number.isNaN(Date.parse(p.periodEndsOn)) ? String(p.periodEndsOn).slice(0, 10) : null,

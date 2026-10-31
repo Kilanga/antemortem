@@ -82,3 +82,12 @@ test('the source decision is a real link in storage format', () => {
   const html = renderStorage(doc, { status: 'published' });
   assert.match(html, /<h2>Source decision<\/h2>\n<ul><li><a href="https:\/\/x\.atlassian\.net\/wiki/);
 });
+
+test('record-obligation threshold normalisation does not depend on operator precedence', () => {
+  const norm = (metric, threshold) => ((metric === 'ratio_within_sla' || metric === 'jsm_sla') && threshold != null && threshold > 1 ? threshold / 100 : threshold);
+  assert.equal(norm('ratio_within_sla', 0.95), 0.95);
+  assert.equal(norm('ratio_within_sla', 95), 0.95);
+  assert.equal(norm('jsm_sla', 95), 0.95);
+  assert.equal(norm('count_max', 3), 3);
+  assert.equal(norm('ratio_within_sla', null), null);
+});

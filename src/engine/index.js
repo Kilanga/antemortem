@@ -94,6 +94,8 @@ export async function runAnalysis({ source = 'manual', now = new Date() } = {}) 
       }
     }
 
+    // Keep the forecast table bounded: superseded rows older than 30 days go.
+    await execute('DELETE FROM forecast WHERE superseded_by IS NOT NULL AND computed_at < ?', [toSqlDateTime(new Date(now.getTime() - 30 * 86400_000))]).catch((e) => console.warn('[antemortem] prune failed', e?.message));
     await updateById('analysis_run', runId, { status: 'done', finished_at: new Date(), summary });
     return { runId, ok: true, durationMs: Date.now() - startedAt.getTime(), summary };
   } catch (err) {

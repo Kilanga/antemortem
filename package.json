@@ -1,6 +1,6 @@
 {
   "name": "antemortem",
-  "version": "0.1.0",
+  "version": "0.8.1",
   "description": "Antemortem writes your post-mortems before the incidents happen — Atlassian Forge app (Codegeist 2026)",
   "main": "index.js",
   "license": "UNLICENSED",
@@ -26,5 +26,8 @@
     "@forge/resolver": "^2.0.2",
     "@forge/sql": "^4.0.9",
     "react": "^18.3.1"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

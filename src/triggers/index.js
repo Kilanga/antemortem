@@ -4,7 +4,6 @@
  * just gets retried, and the migration runner is already idempotent).
  */
 import { runMigrations, getSchemaStatus } from '../db/migrate.js';
-import { runAnalysis } from '../engine/index.js';
 import { getSettings } from '../settings.js';
 import { jobsQueue } from '../demo/consumer.js';
 import { query, toSqlDateTime } from '../db/client.js';
@@ -29,10 +28,14 @@ export async function hourly() {
     console.log('[antemortem] hourly: schema incomplete, running migrations', status.missing);
     await runMigrations({ deadlineMs: 20_000 });
   }
-  // 2. Run the analysis.
-  const result = await runAnalysis({ source: 'scheduled' });
-  console.log('[antemortem] hourly analysis', JSON.stringify(result));
-  return result;
+  // 2. Queue the analysis (same path and 15-minute budget as the UI button),
+  //    unless one is already running — scheduled triggers can fire twice.
+  const running = await query("SELECT id FROM analysis_run WHERE status = 'running' AND started_at > ? LIMIT 1", [toSqlDateTime(new Date(Date.now() - 20 * 60_000))]);
+  if (running.length) { console.log('[antemortem] hourly: an analysis is already running, skipped'); return { skipped: true }; }
+  const active = await query("SELECT COUNT(*) AS n FROM obligation WHERE status = 'active' AND archived_at IS NULL");
+  if (!Number(active[0]?.n ?? 0)) return { skipped: true, reason: 'no active obligation' };
+  await jobsQueue.push({ body: { job: 'run-analysis', source: 'scheduled' } });
+  return { queued: true };
 }
 
 /**

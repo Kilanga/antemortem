@@ -354,9 +354,11 @@ resolver.define('getMacroSummary', safe(async (req) => {
     const [parent] = await findPagesByTitle(space.id, parentTitle);
     if (!parent) return [];
     const children = await listChildPages(parent.id);
+    const pages = await Promise.all(children.slice(0, 10).map((c) => getPage(c.id).catch(() => null)));
     const out = [];
-    for (const c of children.slice(0, 20)) {
-      const page = await getPage(c.id);
+    for (const [idx, c] of children.slice(0, 10).entries()) {
+      const page = pages[idx];
+      if (!page) continue;
       const text = page.body.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
       const probability = Number(text.match(/probability (\d+) %/)?.[1] ?? 0) / 100;
       const cost = text.match(/penalty ([^.]*?)(?:\.| Every)/)?.[1]?.trim() ?? text.match(/cost avoided: ([^.]*?)\./)?.[1]?.trim() ?? '';
@@ -393,12 +395,8 @@ resolver.define('getIssueContext', safe(async (req) => {
   // Obligations whose scope contains this issue (one cheap JQL per obligation).
   const obls = await obligations.list({ where: "status = 'active' AND jql_scope IS NOT NULL", limit: 50 });
   const feeds = [];
-  for (const o of obls) {
-    try {
-      const hits = await searchIssues(`key = ${issueKey} AND (${o.jql_scope})`, { fields: ['status'], maxTotal: 1 });
-      if (hits.length) feeds.push(o);
-    } catch { /* invalid JQL on this obligation: skip */ }
-  }
+  const membership = await Promise.all(obls.map((o) => searchIssues(`key = ${issueKey} AND (${o.jql_scope})`, { fields: ['status'], maxTotal: 1 }).then((hits) => hits.length > 0).catch(() => false)));
+  obls.forEach((o, i) => { if (membership[i]) feeds.push(o); });
   const latestForecast = async (oid) => (await query('SELECT probability, projected_breach_date FROM forecast WHERE obligation_id = ? AND superseded_by IS NULL ORDER BY computed_at DESC LIMIT 1', [oid]))[0] ?? null;
   const obligationsOut = [];
   for (const o of feeds) {

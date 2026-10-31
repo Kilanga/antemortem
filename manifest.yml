@@ -333,7 +333,6 @@ permissions:
     # loader only) creating/deleting the NFS project.
     - read:jira-work
     - write:jira-work
-    - read:jira-user
     - manage:jira-configuration
     # Confluence — publishing projected incidents (v2 pages API, granular)
     # and (demo loader only) creating/deleting the ANTE space (v1, classic).
