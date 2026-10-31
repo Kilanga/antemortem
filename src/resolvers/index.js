@@ -326,7 +326,8 @@ resolver.define('getGadgetSummary', safe(async () => {
   const atRisk = scored.filter(({ f }) => f.explanation?.steps?.length && Number(f.probability) > 0.05)
     .map(({ o, f }) => ({ code: o.code, title: o.title, probability: Number(f.probability), cost: Number(f.projected_cost ?? 0), currency: f.currency ?? o.contract?.currency ?? 'EUR', breach: String(f.projected_breach_date).slice(0, 10) }))
     .sort((a, b) => b.probability - a.probability);
-  const [fi] = await futureIncidents.list({ where: "status IN ('draft','published')", orderBy: 'incident_date ASC', limit: 1 });
+  const openIncidents = await futureIncidents.list({ where: "status IN ('draft','published')", orderBy: 'incident_date ASC', limit: 20 });
+  const fi = openIncidents.find((x) => obls.some((o) => o.id === x.obligation_id)) ?? null;
   const top = atRisk[0];
   const next = fi || (top && top.probability >= 0.6) ? {
     title: fi?.title ?? `${top.code} — ${top.title}`,
