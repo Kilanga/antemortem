@@ -70,7 +70,7 @@ Settings → **Reset demo** (two clicks): deletes project NFS, space ANTE and th
 
 ## If something goes wrong
 
-- *Tables show `missing`*: click **Repair database**; Forge's hourly trigger also retries.
+- *Tables show `missing`*: click **Repair database**; Forge's daily trigger also retries.
 - *Demo load failed at a step*: click **Load demo scenario** again — completed steps are skipped. The usual cause is a pre-existing project `NFS` or space `ANTE` from an earlier attempt; use **Reset demo** first.
 - *No corrective actions on the incident card*: check that Settings points at project `NFS` (the loader sets it; a manual change may have cleared it).
 - *Rovo agent not listed*: Rovo must be enabled on the site, and the app installed on the product where you open the chat.

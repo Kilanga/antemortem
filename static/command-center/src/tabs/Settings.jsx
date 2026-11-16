@@ -130,7 +130,7 @@ export default function Settings({ overview, notify, onChanged }) {
         </Card>
 
         <Card title="Automation hook">
-          <p className="hint">POST to this URL with the <code>X-Antemortem-Token</code> header to run an analysis. It also runs hourly.</p>
+          <p className="hint">POST to this URL with the <code>X-Antemortem-Token</code> header to run an analysis. It also runs once a day.</p>
           {hook ? (hook.error ? <Callout kind="warn">{hook.error}</Callout> : <pre>{hook.example}</pre>) : <div className="actions left"><button className="btn subtle" type="button" onClick={revealHook}>Reveal URL and token</button></div>}
         </Card>
       </section>

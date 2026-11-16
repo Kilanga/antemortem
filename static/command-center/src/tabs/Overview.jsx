@@ -92,7 +92,7 @@ export default function Overview({ overview, busy, onRunAnalysis, onRepair, onTa
                 <dt>Finished</dt><dd>{fmtDateTime(lastRun.finished_at)}</dd>
                 <dt>Summary</dt><dd><pre>{pretty(lastRun.summary)}</pre></dd>
               </dl>
-            ) : <p className="hint">The hourly schedule runs the engine automatically.</p>}
+            ) : <p className="hint">The daily schedule runs the engine automatically.</p>}
           </Card>
           <Card title="Configuration" status={configured ? 'ok' : 'warn'} statusLabel={configured ? 'Configured' : 'Not configured'}>
             <dl className="kv">

@@ -267,7 +267,7 @@ modules:
           description: The issues that feed the measure, e.g. project = "NFS" AND labels = lot-3 AND labels = intervention.
 
   # ---------------------------------------------------------------------------
-  # Lifecycle — schema is applied at install time, and re-checked hourly
+  # Lifecycle — schema is applied at install time, and re-checked daily
   # ---------------------------------------------------------------------------
   trigger:
     - key: antemortem-on-install
@@ -279,7 +279,7 @@ modules:
   scheduledTrigger:
     - key: antemortem-hourly
       function: hourly
-      interval: hour
+      interval: day
 
   # "Run analysis now" — also used by the demo and by tests.
   webtrigger:

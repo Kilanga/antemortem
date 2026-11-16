@@ -5,7 +5,7 @@
  * install), so `run()` can fail transiently. We retry inside a deadline that
  * fits the 55 s function timeout, and we call this from three places:
  *   1. the install / upgrade trigger   (first attempt, right after install)
- *   2. the hourly scheduled trigger    (catches installs where 1. failed)
+ *   2. the daily scheduled trigger    (catches installs where 1. failed)
  *   3. the "Repair database" button    (manual, from the command center)
  *
  * Because migrationRunner keeps one global queue, we enqueue only once per

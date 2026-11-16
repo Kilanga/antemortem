@@ -19,7 +19,7 @@ export async function onInstall(event, context) {
   return result;
 }
 
-/** scheduledTrigger, every hour */
+/** scheduledTrigger, once a day (was hourly; reduced to stay inside the Forge SQL free allocation) */
 export async function hourly() {
   // 1. Make sure the schema is complete (covers installs where the install
   //    trigger hit the DDL rate limit, and minor upgrades that add tables).

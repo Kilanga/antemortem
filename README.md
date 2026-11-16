@@ -6,7 +6,7 @@ An Atlassian Forge app for Jira, Confluence and Rovo. It gives an organisation t
 
 - **Project book (French):** [BUILD.md](BUILD.md) — concept, architecture, data model, engine, demo scenario, plan.
 - **For judges (English):** [JUDGE_INSTRUCTIONS.md](JUDGE_INSTRUCTIONS.md) — install and test in 10 minutes.
-- **Platform surfaces:** Jira global page (Custom UI), issue panel, dashboard gadget, Confluence macro, Rovo agent with 7 actions, the same actions as **MCP tools** (`rovo:mcp`), a **skill** for Rovo Studio agents (`rovo:skill`), an outbound **Teamwork Graph connector** that publishes obligations, decisions and projected incidents as searchable documents, a web trigger, an hourly schedule.
+- **Platform surfaces:** Jira global page (Custom UI), issue panel, dashboard gadget, Confluence macro, Rovo agent with 7 actions, the same actions as **MCP tools** (`rovo:mcp`), a **skill** for Rovo Studio agents (`rovo:skill`), an outbound **Teamwork Graph connector** that publishes obligations, decisions and projected incidents as searchable documents, a web trigger, a daily schedule.
 - **What it does, in one screen:** obligations, decisions with typed assumptions, an explainable forecast, a post-mortem published in the future, what-if and history on the causal chain, a portfolio across contracts, an issue panel, a Confluence macro and a Rovo agent that proposes decisions from pages.
 - **Video plan:** [DEMO_SCRIPT.md](DEMO_SCRIPT.md). **History:** [CHANGELOG.md](CHANGELOG.md). **Out of scope:** [BACKLOG.md](BACKLOG.md).
 
@@ -81,11 +81,11 @@ flowchart LR
   O & D & P --> TWG[(Teamwork Graph<br/>outbound connector)]
 ```
 
-**One analysis run** (`src/engine/index.js`, hourly, on demand, or from the web trigger): for each active obligation, `issuesInScope(jql)` → `computeMetric` → direct detectors (trend, stale critical issue, single point of failure, silent assignee) → `checkAssumption` for each assumption of the decisions it depends on → `computeForecast` (a transparent sum, bounded 0.05–0.98) → `buildChain` (dated evidence, root decision first) → `reconcileIncident`: publish when the probability crosses the threshold, update while it stays above, avert when it drops, reinstate when it comes back, materialize when the period closes breached.
+**One analysis run** (`src/engine/index.js`, daily, on demand, or from the web trigger): for each active obligation, `issuesInScope(jql)` → `computeMetric` → direct detectors (trend, stale critical issue, single point of failure, silent assignee) → `checkAssumption` for each assumption of the decisions it depends on → `computeForecast` (a transparent sum, bounded 0.05–0.98) → `buildChain` (dated evidence, root decision first) → `reconcileIncident`: publish when the probability crosses the threshold, update while it stays above, avert when it drops, reinstate when it comes back, materialize when the period closes breached.
 
 **What is deliberately not here**: a language model in the engine. Rovo is used only at the edges — the agent answers from the engine's data, and proposes decisions or obligations read from a page for the user to confirm.
 
-**Constraints that shaped the code**: Forge SQL is provisioned per installation (the Confluence macro reads the published pages rather than the Jira installation's database); resolvers have 25 s (publication runs in an async-events consumer); no foreign keys, no auto-increment (UUIDs, idempotent migrations re-checked hourly).
+**Constraints that shaped the code**: Forge SQL is provisioned per installation (the Confluence macro reads the published pages rather than the Jira installation's database); resolvers have 25 s (publication runs in an async-events consumer); no foreign keys, no auto-increment (UUIDs, idempotent migrations re-checked daily).
 
 ## Security model
 
@@ -108,4 +108,4 @@ A white-box review (scopes, authz, injection, storage escaping, web trigger, ten
 - Forge Custom UI blocks `window.confirm`; `@forge/bridge` throws at import outside a product.
 - Forge SQL and KVS are provisioned **per installation**: the Confluence install of the app cannot read what the Jira install stored. The Confluence macro therefore reads the published pages, not the database.
 - A React hook that ends up inside an effect (bad merge) renders a blank iframe with no error in the parent console; the mock page hides it by luck of ordering.
-- Corrective actions that merely exist must not lower the forecast, or publishing an incident averts it by itself on the next hourly run.
+- Corrective actions that merely exist must not lower the forecast, or publishing an incident averts it by itself on the next scheduled run.
