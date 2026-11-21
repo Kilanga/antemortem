@@ -276,10 +276,13 @@ modules:
         - avi:forge:installed:app
         - avi:forge:upgraded:app
 
-  scheduledTrigger:
-    - key: antemortem-hourly
-      function: hourly
-      interval: day
+  # PAUSED (21 Nov 2026) to stop Forge SQL usage between work sessions.
+  # Re-enable before the demo / submission by uncommenting these four lines.
+  # Until then the analysis only runs from "Run analysis" or the web trigger.
+  # scheduledTrigger:
+  #   - key: antemortem-hourly
+  #     function: hourly
+  #     interval: day
 
   # "Run analysis now" — also used by the demo and by tests.
   webtrigger:
@@ -309,7 +312,7 @@ modules:
       handler: index.onInstall
     - key: hourly
       handler: index.hourly
-      timeoutSeconds: 55
+      # timeoutSeconds: 55   # restore together with scheduledTrigger above
     - key: run-analysis-webtrigger
       handler: index.runAnalysisWebtrigger
     - key: jobs
